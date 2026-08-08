@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppState } from "../src/context/AppContext";
 import { generateOutfit } from "../src/services/geminiService";
 import PrimaryButton from "../src/components/PrimaryButton";
+import PolaroidCard from "../src/components/PolaroidCard";
+import SparkleBurst from "../src/components/SparkleBurst";
 import { colors, radius, fonts, spacing, shadow } from "../src/theme/tokens";
 
+const SLOT_META = [
+  { key: "top", label: "Top", rotation: -4 },
+  { key: "bottom", label: "Bottom", rotation: 3 },
+  { key: "outerwear", label: "Layer", rotation: -3 },
+  { key: "footwear", label: "Finish", rotation: 4 },
+];
+
 export default function StylistResultScreen() {
+  const { occasion } = useLocalSearchParams();
   const { clothesList, deductCredit } = useAppState();
   const [outfit, setOutfit] = useState(null);
   const [error, setError] = useState(null);
@@ -20,10 +30,12 @@ export default function StylistResultScreen() {
 
     deductCredit();
 
-    generateOutfit(clothesList)
+    generateOutfit(clothesList, occasion)
       .then(setOutfit)
       .catch((err) => setError(err.message));
   }, []);
+
+  const filledSlots = outfit ? SLOT_META.filter((slot) => outfit.outfit[slot.key]) : [];
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -49,20 +61,35 @@ export default function StylistResultScreen() {
 
       {outfit && (
         <ScrollView contentContainerStyle={styles.body}>
-          <Text style={styles.mark}>✦</Text>
-          <Text style={styles.title}>{outfit.title}</Text>
-          <Text style={styles.occasion}>{outfit.occasion}</Text>
-
-          <View style={[styles.card, shadow.card]}>
-            {outfit.pieces.map((piece, i) => (
-              <View key={i} style={styles.pieceRow}>
-                <Text style={styles.pieceIndex}>{String(i + 1).padStart(2, "0")}</Text>
-                <Text style={styles.pieceText}>{piece}</Text>
-              </View>
-            ))}
+          <View style={styles.celebrationWrap}>
+            <SparkleBurst />
+            <Text style={styles.celebrationTitle}>✦ OUTFIT CURATED ✦</Text>
           </View>
 
-          <Text style={styles.narrative}>{outfit.narrative}</Text>
+          <Text style={styles.title}>{outfit.title}</Text>
+
+          <View style={styles.occasionBadge}>
+            <Text style={styles.occasionBadgeText}>{outfit.occasion}</Text>
+          </View>
+
+          {filledSlots.length > 0 ? (
+            <View style={styles.polaroidRow}>
+              {filledSlots.map((slot, i) => (
+                <PolaroidCard
+                  key={slot.key}
+                  item={outfit.outfit[slot.key]}
+                  slotLabel={slot.label}
+                  rotation={slot.rotation}
+                  delay={i * 140}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          <View style={[styles.tipCard, shadow.card]}>
+            <Text style={styles.tipLabel}>Styling Note</Text>
+            <Text style={styles.tipText}>{outfit.stylingTip}</Text>
+          </View>
 
           <PrimaryButton
             label="Back To Archive"
@@ -94,36 +121,67 @@ const styles = StyleSheet.create({
   loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   loadingText: { color: colors.ivory, marginTop: spacing.md, fontFamily: fonts.serif },
   body: { padding: spacing.lg, alignItems: "center" },
-  mark: { color: colors.gold, fontSize: 22, marginBottom: 12 },
+  celebrationWrap: {
+    width: "100%",
+    height: 70,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  celebrationTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 15,
+    letterSpacing: 3,
+    color: colors.gold,
+    textTransform: "uppercase",
+  },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 26,
+    fontSize: 28,
     color: colors.ivory,
     textAlign: "center",
+    marginTop: 4,
   },
-  occasion: {
-    fontSize: 11,
-    letterSpacing: 2,
+  occasionBadge: {
+    marginTop: 12,
+    marginBottom: spacing.xl,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  occasionBadgeText: {
+    fontSize: 10,
+    letterSpacing: 1.5,
     textTransform: "uppercase",
     color: colors.gold,
-    marginTop: 8,
+    fontWeight: "600",
+  },
+  polaroidRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 14,
     marginBottom: spacing.xl,
   },
-  card: {
+  tipCard: {
     width: "100%",
     backgroundColor: colors.ivory,
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  pieceRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
-  pieceIndex: { fontFamily: fonts.serif, fontSize: 12, color: colors.smoke, width: 28 },
-  pieceText: { fontFamily: fonts.serif, fontSize: 15, color: colors.obsidian, flex: 1 },
-  narrative: {
-    marginTop: spacing.xl,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.hairline,
-    textAlign: "center",
+  tipLabel: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    color: colors.smoke,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  tipText: {
     fontFamily: fonts.serif,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.obsidian,
   },
 });

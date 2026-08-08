@@ -1,13 +1,16 @@
-import { View, Text, FlatList, StyleSheet, Pressable } from "react-native";
+import { useState } from "react";
+import { View, Text, FlatList, StyleSheet, Pressable, Modal } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppState } from "../src/context/AppContext";
 import ClothesCard from "../src/components/ClothesCard";
+import { OCCASIONS } from "../src/constants/occasions";
 import { colors, radius, fonts, shadow, spacing } from "../src/theme/tokens";
 
 export default function HomeScreen() {
   const { clothesList, maxStorage, aiCredits, userTier } = useAppState();
+  const [occasionModalVisible, setOccasionModalVisible] = useState(false);
 
   function handleAddClothes() {
     if (clothesList.length >= maxStorage) {
@@ -22,7 +25,12 @@ export default function HomeScreen() {
       router.push("/checkout");
       return;
     }
-    router.push("/stylist-result");
+    setOccasionModalVisible(true);
+  }
+
+  function handleSelectOccasion(key) {
+    setOccasionModalVisible(false);
+    router.push({ pathname: "/stylist-result", params: { occasion: key } });
   }
 
   return (
@@ -62,6 +70,33 @@ export default function HomeScreen() {
       <Pressable onPress={handleStyleMe} style={[styles.styleCta, shadow.float]}>
         <Text style={styles.styleCtaText}>✦ Style My Outfit</Text>
       </Pressable>
+
+      <Modal
+        visible={occasionModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOccasionModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setOccasionModalVisible(false)}>
+          <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>What are you dressing for?</Text>
+            <View style={styles.pillGrid}>
+              {OCCASIONS.map((o) => (
+                <Pressable
+                  key={o.key}
+                  onPress={() => handleSelectOccasion(o.key)}
+                  style={({ pressed }) => [styles.pill, pressed && styles.pillPressedWrap]}
+                >
+                  <Text style={styles.pillText}>{o.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable onPress={() => setOccasionModalVisible(false)} style={styles.modalCancel}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -144,5 +179,60 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: "uppercase",
     fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(10,10,10,0.55)",
+    justifyContent: "flex-end",
+  },
+  pillPressedWrap: {
+    opacity: 0.5,
+  },
+  modalSheet: {
+    backgroundColor: colors.ivory,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
+  modalTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 20,
+    color: colors.obsidian,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  pillGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: spacing.md,
+  },
+  pill: {
+    width: "48%",
+    paddingVertical: 16,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.obsidian,
+    alignItems: "center",
+  },
+  pillText: {
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    fontWeight: "600",
+    color: colors.obsidian,
+  },
+  modalCancel: {
+    marginTop: spacing.lg,
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  modalCancelText: {
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: colors.smoke,
   },
 });
