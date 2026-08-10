@@ -62,8 +62,10 @@ export default function StylistResultScreen() {
       {outfit && (
         <ScrollView contentContainerStyle={styles.body}>
           <View style={styles.celebrationWrap}>
-            <SparkleBurst />
-            <Text style={styles.celebrationTitle}>✦ OUTFIT CURATED ✦</Text>
+            {!outfit.incomplete && <SparkleBurst />}
+            <Text style={styles.celebrationTitle}>
+              {outfit.incomplete ? "✦ ALMOST THERE ✦" : "✦ OUTFIT CURATED ✦"}
+            </Text>
           </View>
 
           <Text style={styles.title}>{outfit.title}</Text>
