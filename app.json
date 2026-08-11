@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MeraWardrobe",
+    "name": "The Cupboard",
     "slug": "merawardrobe",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#F7F2E7"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "package": "com.merawardrobe.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0A",
+        "backgroundColor": "#F7F2E7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -35,7 +35,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "MeraWardrobe uses your photo library to add garments to your digital wardrobe."
+          "photosPermission": "The Cupboard uses your photo library to add garments to your digital wardrobe.",
+          "cameraPermission": "The Cupboard uses your camera to photograph garments for your digital wardrobe."
         }
       ]
     ],

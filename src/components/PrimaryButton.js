@@ -1,7 +1,7 @@
 import { Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { colors, radius, fonts } from "../theme/tokens";
 
-export default function PrimaryButton({ label, onPress, disabled, loading, variant = "dark", style }) {
+export default function PrimaryButton({ label, onPress, disabled, loading, variant = "dark", caps = false, style }) {
   const isLight = variant === "light";
   return (
     <Pressable
@@ -16,9 +16,17 @@ export default function PrimaryButton({ label, onPress, disabled, loading, varia
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isLight ? colors.obsidian : colors.ivory} />
+        <ActivityIndicator color={isLight ? colors.charcoal : colors.ivory} />
       ) : (
-        <Text style={[styles.label, isLight ? styles.labelDark : styles.labelLight]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            caps && styles.labelCaps,
+            isLight ? styles.labelDark : styles.labelLight,
+          ]}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -32,17 +40,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dark: { backgroundColor: colors.obsidian },
-  light: { backgroundColor: colors.ivory, borderWidth: 1, borderColor: colors.obsidian },
+  dark: { backgroundColor: colors.charcoal },
+  light: { backgroundColor: colors.ivory, borderWidth: 1, borderColor: colors.charcoal },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.85 },
   label: {
     fontFamily: fonts.system,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  labelCaps: {
     fontSize: 13,
     letterSpacing: 2,
     textTransform: "uppercase",
-    fontWeight: "600",
   },
   labelLight: { color: colors.ivory },
-  labelDark: { color: colors.obsidian },
+  labelDark: { color: colors.charcoal },
 });

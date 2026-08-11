@@ -1,4 +1,4 @@
-# MeraWardrobe
+# The Cupboard
 
 A luxury-positioned AI wardrobe management prototype for the Pakistani market, built with Expo (React Native) and expo-router. All state is persisted locally via AsyncStorage — no backend required.
 
@@ -13,7 +13,7 @@ Scan the QR code with the **Expo Go** app (iOS/Android) to run it on a device, o
 
 ## AI Stylist (optional)
 
-The AI Stylist calls Gemini Flash when an API key is present, and otherwise falls back to a local editorial outfit generator so the whole flow works offline in Expo Go.
+The AI Stylist calls Gemini Flash when an API key is present, and otherwise falls back to a local editorial outfit generator so the whole flow works offline in Expo Go. Every result pairs one Top with one Bottom — an **Anchor** (chosen freely, or fixed when styling around a specific archive item) and its best-matching **Match** for the selected occasion.
 
 To enable live Gemini calls, create a `.env` file:
 
@@ -32,19 +32,21 @@ EXPO_PUBLIC_GEMINI_API_KEY=your-key-here
 ## Project structure
 
 ```
-app/                  expo-router screens (file-based routing)
-  splash.js            /splash — brand splash, hydrates state
-  home.js               /home — wardrobe grid + credit badge
-  add-item.js           /add-item — add a garment (modal)
-  detail.js              /detail — garment detail (modal)
-  stylist-result.js     /stylist-result — AI outfit recommendation
-  checkout.js            /checkout — plan + payment sheet (modal)
+app/                     expo-router screens (file-based routing)
+  splash.js                /splash — logo fade-in, routes to /welcome or /home
+  welcome.js                /welcome — hero + mock Google sign-in
+  home.js                     /home — archive grid, credit pill (opens Paywall), add drawer
+  item/[id].js                 /item/:id — full-bleed item detail, "Style Around This Item"
+  stylist-result.js         /stylist-result — loading, Anchor+Match result, rating, no-match
+  checkout.js                /checkout — plan + payment sheet (Paywall, modal)
 src/
-  context/AppContext.js   persisted app state (tier, credits, wardrobe)
+  context/AppContext.js      persisted app state (tier, credits, wardrobe, onboarding)
   services/mockPaymentService.js
-  services/geminiService.js
-  components/              shared UI (ClothesCard, PrimaryButton)
-  theme/tokens.js           editorial styling tokens
+  services/geminiService.js   Anchor+Match outfit generation
+  constants/occasions.js       categorized occasion taxonomy
+  utils/categorize.js           shared top/bottom/outerwear/footwear classifier
+  components/                    shared UI (CupboardLogo, OccasionModal, AddItemDrawer, ...)
+  theme/tokens.js                 editorial styling tokens (warm off-white + charcoal)
 ```
 
 ## Plans

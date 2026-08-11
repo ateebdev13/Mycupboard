@@ -2,7 +2,7 @@
 // purely to exercise the JazzCash / EasyPaisa / Card checkout UX during the prototype.
 
 const METHODS = ["JAZZCASH", "EASYPAISA", "CARD"];
-const NAYAPAY_SETTLEMENT_ACCOUNT = "NP-MERAWARDROBE-00417";
+const NAYAPAY_SETTLEMENT_ACCOUNT = "NP-THECUPBOARD-00417";
 
 function randomTransactionId() {
   const digits = Math.floor(100000 + Math.random() * 900000);

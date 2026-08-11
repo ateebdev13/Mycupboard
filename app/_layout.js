@@ -12,14 +12,14 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: colors.bone },
+            contentStyle: { backgroundColor: colors.canvas },
           }}
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="splash" />
+          <Stack.Screen name="welcome" />
           <Stack.Screen name="home" />
-          <Stack.Screen name="detail" options={{ presentation: "modal" }} />
-          <Stack.Screen name="add-item" options={{ presentation: "modal" }} />
+          <Stack.Screen name="item/[id]" options={{ presentation: "modal" }} />
           <Stack.Screen name="stylist-result" options={{ presentation: "card" }} />
           <Stack.Screen name="checkout" options={{ presentation: "modal" }} />
         </Stack>

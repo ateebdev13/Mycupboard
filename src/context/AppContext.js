@@ -8,6 +8,7 @@ const DEFAULT_STATE = {
   maxStorage: 10,
   aiCredits: 1,
   clothesList: [],
+  hasOnboarded: false,
 };
 
 const AppContext = createContext(null);
@@ -98,6 +99,9 @@ export function AppProvider({ children }) {
           maxStorage: 20,
           aiCredits: 15,
         }));
+      },
+      completeOnboarding() {
+        setState((prev) => ({ ...prev, hasOnboarded: true }));
       },
     }),
     []

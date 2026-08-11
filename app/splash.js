@@ -1,52 +1,60 @@
-import { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { useAppState } from "../src/context/AppContext";
+import CupboardLogo from "../src/components/CupboardLogo";
 import { colors, fonts } from "../src/theme/tokens";
 
+const SPLASH_DURATION = 2500;
+
 export default function SplashScreen() {
-  const { isReady } = useAppState();
+  const { isReady, hasOnboarded } = useAppState();
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 900,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isReady) {
-        router.replace("/home");
+        router.replace(hasOnboarded ? "/home" : "/welcome");
       }
-    }, 2000);
+    }, SPLASH_DURATION);
     return () => clearTimeout(timer);
-  }, [isReady]);
+  }, [isReady, hasOnboarded]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.mark}>✦</Text>
-      <Text style={styles.title}>MERAWARDROBE</Text>
-      <Text style={styles.subtitle}>THE DIGITAL ARCHIVE</Text>
-    </View>
+    <Animated.View style={[styles.container, { opacity }]}>
+      <CupboardLogo size="lg" showWordmark={false} style={styles.mark} />
+      <Animated.Text style={styles.title}>THE CUPBOARD</Animated.Text>
+      <Animated.View style={styles.rule} />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.obsidian,
+    backgroundColor: colors.canvas,
     alignItems: "center",
     justifyContent: "center",
   },
-  mark: {
-    color: colors.gold,
-    fontSize: 22,
-    marginBottom: 18,
-  },
+  mark: { marginBottom: 20 },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 30,
-    letterSpacing: 6,
-    color: colors.ivory,
-  },
-  subtitle: {
-    marginTop: 12,
-    fontSize: 11,
+    fontSize: 18,
     letterSpacing: 4,
-    color: colors.smoke,
+    color: colors.charcoal,
+  },
+  rule: {
+    marginTop: 14,
+    width: 28,
+    height: 2,
+    backgroundColor: colors.hairline,
   },
 });

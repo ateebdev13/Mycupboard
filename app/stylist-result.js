@@ -1,176 +1,259 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppState } from "../src/context/AppContext";
 import { generateOutfit } from "../src/services/geminiService";
-import PrimaryButton from "../src/components/PrimaryButton";
-import PolaroidCard from "../src/components/PolaroidCard";
-import SparkleBurst from "../src/components/SparkleBurst";
+import { categorizeItem } from "../src/utils/categorize";
+import AnchorMatchCard from "../src/components/AnchorMatchCard";
+import StylistLoadingGraphic from "../src/components/StylistLoadingGraphic";
+import RatingModal from "../src/components/RatingModal";
 import { colors, radius, fonts, spacing, shadow } from "../src/theme/tokens";
 
-const SLOT_META = [
-  { key: "top", label: "Top", rotation: -4 },
-  { key: "bottom", label: "Bottom", rotation: 3 },
-  { key: "outerwear", label: "Layer", rotation: -3 },
-  { key: "footwear", label: "Finish", rotation: 4 },
-];
+const LOADING_PHRASES = ["Scanning archive...", "Matching colors...", "Weighing formality...", "Finalizing your look..."];
+
+const ROLE_LABELS = {
+  top: "Top",
+  bottom: "Bottom",
+  outerwear: "Layer",
+  footwear: "Accessory",
+  onepiece: "Piece",
+};
+
+function roleLabelFor(item) {
+  return ROLE_LABELS[categorizeItem(item)] ?? "Piece";
+}
+
+function useRotatingPhrase(active) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [active]);
+  return LOADING_PHRASES[index];
+}
 
 export default function StylistResultScreen() {
-  const { occasion } = useLocalSearchParams();
-  const { clothesList, deductCredit } = useAppState();
+  const { occasion, anchorItemId } = useLocalSearchParams();
+  const { clothesList, aiCredits, deductCredit } = useAppState();
   const [outfit, setOutfit] = useState(null);
-  const [error, setError] = useState(null);
-  const hasRun = useRef(false);
+  const [ratingVisible, setRatingVisible] = useState(false);
+  const ratingTimer = useRef(null);
+  const phrase = useRotatingPhrase(!outfit);
+
+  function runGeneration() {
+    setOutfit(null);
+    deductCredit();
+    generateOutfit(clothesList, occasion, anchorItemId ?? null).then((result) => {
+      setOutfit(result);
+      if (!result.noMatch) {
+        ratingTimer.current = setTimeout(() => setRatingVisible(true), 2000);
+      }
+    });
+  }
 
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
-    deductCredit();
-
-    generateOutfit(clothesList, occasion)
-      .then(setOutfit)
-      .catch((err) => setError(err.message));
+    runGeneration();
+    return () => {
+      if (ratingTimer.current) clearTimeout(ratingTimer.current);
+    };
   }, []);
 
-  const filledSlots = outfit ? SLOT_META.filter((slot) => outfit.outfit[slot.key]) : [];
+  function handleMatchAnother() {
+    if (aiCredits <= 0) {
+      router.push("/checkout");
+      return;
+    }
+    setRatingVisible(false);
+    if (ratingTimer.current) clearTimeout(ratingTimer.current);
+    runGeneration();
+  }
+
+  function handleAddNewItem() {
+    router.replace({ pathname: "/home", params: { openAdd: "1" } });
+  }
+
+  if (!outfit) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={10}>
+            <Ionicons name="chevron-back" size={16} color={colors.smoke} />
+            <Text style={styles.topBarLabel}>STYLIST AI</Text>
+          </Pressable>
+        </View>
+        <View style={styles.centerWrap}>
+          <StylistLoadingGraphic />
+          <Text style={styles.loadingTitle}>Curating Your Style</Text>
+          <Text style={styles.loadingSubtitle}>{phrase}</Text>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (outfit.noMatch) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={10}>
+            <Ionicons name="chevron-back" size={16} color={colors.smoke} />
+            <Text style={styles.topBarLabel}>STYLIST AI</Text>
+          </Pressable>
+        </View>
+        <View style={styles.centerWrap}>
+          <View style={styles.noMatchCircle}>
+            <MaterialCommunityIcons name="hanger" size={34} color={colors.smoke} />
+          </View>
+          <Text style={styles.loadingTitle}>No Match Found</Text>
+          <Text style={styles.noMatchBody}>{outfit.stylingTip}</Text>
+
+          <Pressable onPress={handleAddNewItem} style={styles.primaryDark}>
+            <Text style={styles.primaryDarkText}>+ Add New Item</Text>
+          </Pressable>
+          <Pressable onPress={() => router.back()} style={styles.primaryLight}>
+            <Text style={styles.primaryLightText}>Try Different Occasion</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <View style={styles.header}>
-        <Text style={styles.headerLabel}>AI Stylist</Text>
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={colors.ivory} />
+      <ScrollView contentContainerStyle={styles.body}>
+        <View style={styles.matchBadge}>
+          <Text style={styles.matchBadgeText}>✦ A Perfect Match ✦</Text>
+        </View>
+        <Text style={styles.occasionLine}>Curated for {outfit.occasion}</Text>
+
+        <Text style={styles.title}>{outfit.title}</Text>
+
+        <View style={styles.cardsWrap}>
+          <AnchorMatchCard item={outfit.anchor} roleLabel={roleLabelFor(outfit.anchor)} delay={0} />
+          <AnchorMatchCard item={outfit.match} roleLabel={roleLabelFor(outfit.match)} isPick delay={140} />
+        </View>
+
+        <View style={[styles.tipCard, shadow.card]}>
+          <Text style={styles.tipLabel}>Styling Note</Text>
+          <Text style={styles.tipText}>{outfit.stylingTip}</Text>
+        </View>
+
+        <Pressable onPress={handleMatchAnother} style={styles.primaryDark}>
+          <Text style={styles.primaryDarkText}>Match Another Look</Text>
         </Pressable>
-      </View>
+        <Pressable onPress={() => router.replace("/home")} style={styles.primaryLight}>
+          <Text style={styles.primaryLightText}>Back to Archive</Text>
+        </Pressable>
+      </ScrollView>
 
-      {!outfit && !error && (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color={colors.gold} size="large" />
-          <Text style={styles.loadingText}>Curating your outfit…</Text>
-        </View>
-      )}
-
-      {error && (
-        <View style={styles.loadingWrap}>
-          <Text style={styles.loadingText}>{error}</Text>
-        </View>
-      )}
-
-      {outfit && (
-        <ScrollView contentContainerStyle={styles.body}>
-          <View style={styles.celebrationWrap}>
-            {!outfit.incomplete && <SparkleBurst />}
-            <Text style={styles.celebrationTitle}>
-              {outfit.incomplete ? "✦ ALMOST THERE ✦" : "✦ OUTFIT CURATED ✦"}
-            </Text>
-          </View>
-
-          <Text style={styles.title}>{outfit.title}</Text>
-
-          <View style={styles.occasionBadge}>
-            <Text style={styles.occasionBadgeText}>{outfit.occasion}</Text>
-          </View>
-
-          {filledSlots.length > 0 ? (
-            <View style={styles.polaroidRow}>
-              {filledSlots.map((slot, i) => (
-                <PolaroidCard
-                  key={slot.key}
-                  item={outfit.outfit[slot.key]}
-                  slotLabel={slot.label}
-                  rotation={slot.rotation}
-                  delay={i * 140}
-                />
-              ))}
-            </View>
-          ) : null}
-
-          <View style={[styles.tipCard, shadow.card]}>
-            <Text style={styles.tipLabel}>Styling Note</Text>
-            <Text style={styles.tipText}>{outfit.stylingTip}</Text>
-          </View>
-
-          <PrimaryButton
-            label="Back To Archive"
-            variant="light"
-            onPress={() => router.replace("/home")}
-            style={{ marginTop: spacing.xl }}
-          />
-        </ScrollView>
-      )}
+      <RatingModal
+        visible={ratingVisible}
+        onSubmit={() => setRatingVisible(false)}
+        onSkip={() => setRatingVisible(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.obsidian },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  headerLabel: {
+  container: { flex: 1, backgroundColor: colors.canvas },
+  topBar: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  backRow: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" },
+  topBarLabel: {
     fontSize: 11,
     letterSpacing: 2,
-    textTransform: "uppercase",
     color: colors.smoke,
+    fontWeight: "600",
   },
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { color: colors.ivory, marginTop: spacing.md, fontFamily: fonts.serif },
-  body: { padding: spacing.lg, alignItems: "center" },
-  celebrationWrap: {
-    width: "100%",
-    height: 70,
+  centerWrap: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: spacing.xl,
   },
-  celebrationTitle: {
+  loadingTitle: {
     fontFamily: fonts.serif,
-    fontSize: 15,
-    letterSpacing: 3,
-    color: colors.gold,
+    fontSize: 22,
+    color: colors.charcoal,
+    marginTop: spacing.lg,
+  },
+  loadingSubtitle: {
+    fontSize: 13,
+    color: colors.smoke,
+    marginTop: 6,
+  },
+  progressTrack: {
+    marginTop: spacing.xl,
+    width: 120,
+    height: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.hairline,
+    overflow: "hidden",
+  },
+  progressFill: {
+    width: "60%",
+    height: "100%",
+    backgroundColor: colors.accent,
+  },
+  noMatchCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.surfaceTan,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+  },
+  noMatchBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.smoke,
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: spacing.xl,
+  },
+  body: { padding: spacing.lg, alignItems: "center" },
+  matchBadge: {
+    backgroundColor: colors.accentBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: spacing.sm,
+  },
+  matchBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.accent,
+  },
+  occasionLine: {
+    fontSize: 11,
+    letterSpacing: 1,
     textTransform: "uppercase",
+    color: colors.smoke,
+    marginTop: 10,
   },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 28,
-    color: colors.ivory,
+    fontSize: 26,
+    color: colors.charcoal,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: 8,
+    marginBottom: spacing.lg,
   },
-  occasionBadge: {
-    marginTop: 12,
-    marginBottom: spacing.xl,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.gold,
-  },
-  occasionBadgeText: {
-    fontSize: 10,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    color: colors.gold,
-    fontWeight: "600",
-  },
-  polaroidRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 14,
-    marginBottom: spacing.xl,
-  },
+  cardsWrap: { width: "100%" },
   tipCard: {
     width: "100%",
-    backgroundColor: colors.ivory,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
   tipLabel: {
     fontSize: 10,
@@ -184,6 +267,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serif,
     fontSize: 15,
     lineHeight: 22,
-    color: colors.obsidian,
+    color: colors.charcoal,
   },
+  primaryDark: {
+    width: "100%",
+    backgroundColor: colors.charcoal,
+    borderRadius: radius.lg,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  primaryDarkText: { color: colors.ivory, fontSize: 14, fontWeight: "600" },
+  primaryLight: {
+    width: "100%",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.charcoal,
+    borderRadius: radius.lg,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  primaryLightText: { color: colors.charcoal, fontSize: 14, fontWeight: "600" },
 });

@@ -68,7 +68,7 @@ export default function CheckoutScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Upgrade Your Archive</Text>
         <Pressable onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={colors.obsidian} />
+          <Ionicons name="close" size={24} color={colors.charcoal} />
         </Pressable>
       </View>
 
@@ -139,7 +139,7 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bone },
+  container: { flex: 1, backgroundColor: colors.canvas },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 1.5,
     textTransform: "uppercase",
-    color: colors.obsidian,
+    color: colors.charcoal,
   },
   body: { padding: spacing.lg },
   planCard: {
@@ -167,17 +167,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "transparent",
   },
-  planCardActive: { borderColor: colors.obsidian },
+  planCardActive: { borderColor: colors.charcoal },
   planLabel: {
     fontSize: 13,
     letterSpacing: 1,
     fontWeight: "700",
-    color: colors.obsidian,
+    color: colors.charcoal,
   },
-  planLabelActive: { color: colors.obsidian },
+  planLabelActive: { color: colors.charcoal },
   planDetail: { fontSize: 12, color: colors.smoke, marginTop: 4 },
   planDetailActive: { color: colors.charcoal },
-  planPrice: { fontFamily: fonts.serif, fontSize: 16, color: colors.obsidian },
+  planPrice: { fontFamily: fonts.serif, fontSize: 16, color: colors.charcoal },
   sectionLabel: {
     fontSize: 11,
     letterSpacing: 1.5,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.ivory,
   },
-  methodTabActive: { backgroundColor: colors.obsidian, borderColor: colors.obsidian },
+  methodTabActive: { backgroundColor: colors.charcoal, borderColor: colors.charcoal },
   methodTabText: { fontSize: 12, fontWeight: "600", color: colors.charcoal },
   methodTabTextActive: { color: colors.ivory },
   input: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: colors.obsidian,
+    color: colors.charcoal,
     backgroundColor: colors.ivory,
   },
   hint: { fontSize: 11, color: colors.smoke, marginTop: 8 },
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   bannerSuccess: { backgroundColor: "#E4F1EA" },
   bannerError: { backgroundColor: "#F6E2E0" },
   bannerNeutral: { backgroundColor: colors.hairline },
-  bannerText: { fontSize: 13, color: colors.obsidian, fontWeight: "600" },
+  bannerText: { fontSize: 13, color: colors.charcoal, fontWeight: "600" },
   footer: {
     padding: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,

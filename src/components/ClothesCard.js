@@ -1,18 +1,18 @@
 import { Pressable, View, Text, Image, StyleSheet } from "react-native";
 import { colors, radius, fonts, shadow } from "../theme/tokens";
 
-export default function ClothesCard({ item, onPress }) {
+export default function ClothesCard({ item, onPress, span = "half" }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, shadow.card, pressed && styles.pressed]}
     >
-      <View style={styles.imageWrap}>
+      <View style={[styles.imageWrap, span === "full" && styles.imageWrapFull]}>
         {item.imageUri ? (
           <Image source={{ uri: item.imageUri }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.placeholder}>
-            <Text style={styles.placeholderInitial}>{item.category?.[0]?.toUpperCase() ?? "M"}</Text>
+            <Text style={styles.placeholderInitial}>{item.category?.[0]?.toUpperCase() ?? "C"}</Text>
           </View>
         )}
         <View style={styles.wearBadge}>
@@ -32,7 +32,7 @@ export default function ClothesCard({ item, onPress }) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: colors.ivory,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 10,
     margin: 6,
@@ -45,12 +45,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.hairline,
     marginBottom: 8,
   },
+  imageWrapFull: {
+    aspectRatio: 1.4,
+  },
   image: { width: "100%", height: "100%" },
   placeholder: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bone,
+    backgroundColor: colors.canvas,
   },
   placeholderInitial: {
     fontFamily: fonts.serif,
@@ -61,7 +64,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "rgba(10,10,10,0.75)",
+    backgroundColor: "rgba(30,27,23,0.72)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.pill,
@@ -74,7 +77,7 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: fonts.serif,
     fontSize: 14,
-    color: colors.obsidian,
+    color: colors.charcoal,
   },
   meta: {
     fontFamily: fonts.system,
