@@ -6,12 +6,12 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppState } from "../src/context/AppContext";
 import { generateOutfit } from "../src/services/geminiService";
 import { categorizeItem } from "../src/utils/categorize";
+import { takePendingOutfit } from "../src/state/outfitTransport";
 import AnchorMatchCard from "../src/components/AnchorMatchCard";
 import StylistLoadingGraphic from "../src/components/StylistLoadingGraphic";
 import RatingModal from "../src/components/RatingModal";
+import { useRotatingPhrase } from "../src/hooks/useRotatingPhrase";
 import { colors, radius, fonts, spacing, shadow } from "../src/theme/tokens";
-
-const LOADING_PHRASES = ["Scanning archive...", "Matching colors...", "Weighing formality...", "Finalizing your look..."];
 
 const ROLE_LABELS = {
   top: "Top",
@@ -25,18 +25,6 @@ function roleLabelFor(item) {
   return ROLE_LABELS[categorizeItem(item)] ?? "Piece";
 }
 
-function useRotatingPhrase(active) {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [active]);
-  return LOADING_PHRASES[index];
-}
-
 export default function StylistResultScreen() {
   const { occasion, anchorItemId } = useLocalSearchParams();
   const { clothesList, aiCredits, deductCredit } = useAppState();
@@ -45,19 +33,27 @@ export default function StylistResultScreen() {
   const ratingTimer = useRef(null);
   const phrase = useRotatingPhrase(!outfit);
 
-  function runGeneration() {
-    setOutfit(null);
+  useEffect(() => {
+    const pending = takePendingOutfit();
+    if (pending) {
+      setOutfit(pending);
+      if (!pending.noMatch) {
+        ratingTimer.current = setTimeout(() => setRatingVisible(true), 2000);
+      }
+      return;
+    }
+
+    // Defensive fallback only — the normal flow always routes through
+    // /loading first, which already computes and hands off the result.
+    console.warn("[stylist-result] no pending outfit found, generating inline");
     deductCredit();
-    generateOutfit(clothesList, occasion, anchorItemId ?? null).then((result) => {
+    generateOutfit(clothesList, occasion, anchorItemId || null).then((result) => {
       setOutfit(result);
       if (!result.noMatch) {
         ratingTimer.current = setTimeout(() => setRatingVisible(true), 2000);
       }
     });
-  }
 
-  useEffect(() => {
-    runGeneration();
     return () => {
       if (ratingTimer.current) clearTimeout(ratingTimer.current);
     };
@@ -70,7 +66,7 @@ export default function StylistResultScreen() {
     }
     setRatingVisible(false);
     if (ratingTimer.current) clearTimeout(ratingTimer.current);
-    runGeneration();
+    router.replace({ pathname: "/loading", params: { occasion, anchorItemId: anchorItemId || "" } });
   }
 
   function handleAddNewItem() {

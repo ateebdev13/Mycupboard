@@ -66,6 +66,13 @@ function complementBucketFor(anchorItem) {
   return categorizeItem(anchorItem) === "bottom" ? "top" : "bottom";
 }
 
+/** Category guardrail: a match is only valid if it's a distinct item from the anchor's complementary bucket. */
+function isValidPairing(anchor, match) {
+  if (!anchor || !match) return false;
+  if (anchor.id === match.id) return false;
+  return categorizeItem(match) === complementBucketFor(anchor);
+}
+
 /**
  * Builds a mandatory anchor+match pairing from the wardrobe buckets.
  * If `fixedAnchor` is given, it is always the anchor. Otherwise a top is
@@ -108,10 +115,14 @@ function buildPrompt(clothesList, occasion, anchorItem) {
   const label = occasionLabel(occasion);
 
   if (anchorItem) {
+    const anchorBucket = categorizeItem(anchorItem);
+    const requiredBucket = complementBucketFor(anchorItem);
     return `You are a luxury fashion stylist for The Cupboard, a Pakistani wardrobe app.
 The user is dressing for: "${label}" and has already chosen this anchor piece: id ${anchorItem.id} (${anchorItem.name}, ${anchorItem.category}, ${anchorItem.color}).
 
-From the wardrobe below, choose EXACTLY ONE complementary piece that pairs with the anchor for this occasion (a bottom if the anchor is a top, or a top if the anchor is a bottom). The pairing MUST match in style, color, and formality for the occasion. Do not select the anchor itself.
+STEP 1 — Identify the anchor's category: this piece is a "${anchorBucket}".
+STEP 2 — Category rule (MANDATORY, do not break this): the anchor is a "${anchorBucket}", so you MUST return a "${requiredBucket}" as the match. If the anchor is a Top, the match MUST be a Bottom. If the anchor is a Bottom, the match MUST be a Top. NEVER return an item from the same category as the anchor (e.g. do not pair a Pant with another Pant).
+STEP 3 — From the wardrobe below, choose EXACTLY ONE "${requiredBucket}" item that pairs with the anchor for this occasion, matching in style, color, and formality. Do not select the anchor itself.
 
 Only choose from this exact wardrobe, referencing items by their id field:
 ${wardrobeText}
@@ -119,7 +130,7 @@ ${wardrobeText}
 Respond in strict JSON, no markdown fences, with this exact shape:
 {
   "title": "short editorial outfit name",
-  "matchId": "id (required)",
+  "matchId": "id (required, MUST be a ${requiredBucket} item, never the same category as the anchor)",
   "stylingTip": "exactly 2 sentences of editorial styling advice explaining why the pairing works for the occasion"
 }`;
   }
@@ -127,7 +138,7 @@ Respond in strict JSON, no markdown fences, with this exact shape:
   return `You are a luxury fashion stylist for The Cupboard, a Pakistani wardrobe app.
 The user is dressing for: "${label}".
 
-From the wardrobe below, choose EXACTLY ONE cohesive outfit: 1 Top AND 1 Bottom that match each other in style, color, and formality for the occasion. A complete pairing is MANDATORY — never respond with only one item, and never substitute a one-piece dress/jumpsuit for a top+bottom pair.
+From the wardrobe below, choose EXACTLY ONE cohesive outfit: 1 Top AND 1 Bottom that match each other in style, color, and formality for the occasion. A complete pairing is MANDATORY — never respond with only one item, never substitute a one-piece dress/jumpsuit for a top+bottom pair, and NEVER return two items from the same category (e.g. two Tops or two Bottoms/Pants) — anchorId and matchId must be from different, complementary categories.
 
 Only choose from this exact wardrobe, referencing items by their id field:
 ${wardrobeText}
@@ -136,7 +147,7 @@ Respond in strict JSON, no markdown fences, with this exact shape:
 {
   "title": "short editorial outfit name",
   "anchorId": "id (required, the top)",
-  "matchId": "id (required, the bottom)",
+  "matchId": "id (required, the bottom — a different category from anchorId)",
   "stylingTip": "exactly 2 sentences of editorial styling advice explaining why the top and bottom work together for the occasion"
 }`;
 }
@@ -205,13 +216,20 @@ export async function generateOutfit(clothesList, occasion, anchorItemId = null)
     let anchor = fixedAnchor ?? (parsed.anchorId ? byId.get(parsed.anchorId) ?? null : null);
     let match = parsed.matchId ? byId.get(parsed.matchId) ?? null : null;
 
-    // The AI must return a full pairing. If it left either side null or
-    // hallucinated an id, repair the pairing locally rather than discarding
-    // a perfectly good styling tip and title.
-    if (!anchor || !match) {
-      const repaired = pairAnchorAndMatch(buckets, occasion, fixedAnchor ?? anchor);
-      anchor = anchor ?? repaired.anchor;
-      match = match ?? repaired.match;
+    // Guarantee an anchor exists first (hallucinated/missing anchorId in free-pick mode).
+    if (!anchor) {
+      const repaired = pairAnchorAndMatch(buckets, occasion, null);
+      anchor = repaired.anchor;
+      match = repaired.match;
+    }
+
+    // Category guardrail: the AI is not trustworthy enough to enforce this on
+    // its own. If the match is missing, hallucinated, the anchor itself, or
+    // (the reported bug) the SAME category as the anchor — e.g. a Pant paired
+    // with another Pant — discard it and deterministically pick a correctly
+    // categorized complement (Top<->Bottom) from the anchor's opposite bucket.
+    if (anchor && !isValidPairing(anchor, match)) {
+      match = pickBestMatch(anchor, buckets[complementBucketFor(anchor)], occasion);
     }
 
     if (!anchor || !match) {

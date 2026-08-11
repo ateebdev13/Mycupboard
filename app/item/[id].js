@@ -45,7 +45,7 @@ export default function ItemDetailScreen() {
 
   function handleFindMatch(occasion) {
     setOccasionModalVisible(false);
-    router.push({ pathname: "/stylist-result", params: { occasion, anchorItemId: item.id } });
+    router.push({ pathname: "/loading", params: { occasion, anchorItemId: item.id } });
   }
 
   return (

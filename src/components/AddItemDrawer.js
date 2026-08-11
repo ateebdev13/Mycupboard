@@ -48,13 +48,13 @@ export default function AddItemDrawer({ visible, onClose }) {
   }
 
   function handleSave() {
-    if (!name.trim()) return;
+    if (!name.trim() || !imageUri) return;
     addClothingItem({ name: name.trim(), imageUri });
     reset();
     onClose();
   }
 
-  const isValid = name.trim().length > 0;
+  const isValid = name.trim().length > 0 && !!imageUri;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
@@ -95,6 +95,8 @@ export default function AddItemDrawer({ visible, onClose }) {
               </Pressable>
             </View>
           )}
+
+          {!imageUri && <Text style={styles.hint}>A photo is required to add this piece.</Text>}
 
           <Pressable
             onPress={handleSave}
@@ -200,6 +202,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.accent,
     fontWeight: "600",
+  },
+  hint: {
+    fontSize: 11,
+    color: colors.smoke,
+    marginBottom: spacing.lg,
   },
   saveButton: {
     backgroundColor: colors.charcoal,

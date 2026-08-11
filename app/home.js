@@ -7,14 +7,7 @@ import { useAppState } from "../src/context/AppContext";
 import ClothesCard from "../src/components/ClothesCard";
 import CupboardLogo from "../src/components/CupboardLogo";
 import AddItemDrawer from "../src/components/AddItemDrawer";
-import { categorizeItem } from "../src/utils/categorize";
 import { colors, radius, fonts, shadow, spacing } from "../src/theme/tokens";
-
-const TABS = [
-  { key: "ALL", label: "All Items" },
-  { key: "top", label: "Tops" },
-  { key: "bottom", label: "Bottoms" },
-];
 
 const SOCIAL_PROOF = [
   "Sara upgraded to Infinite Style plan",
@@ -66,7 +59,6 @@ export default function HomeScreen() {
   const { clothesList, maxStorage, aiCredits } = useAppState();
   const params = useLocalSearchParams();
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState("ALL");
 
   useEffect(() => {
     if (params.openAdd === "1") {
@@ -75,12 +67,17 @@ export default function HomeScreen() {
     }
   }, [params.openAdd]);
 
-  const filteredList = useMemo(() => {
-    if (activeTab === "ALL") return clothesList;
-    return clothesList.filter((item) => categorizeItem(item) === activeTab);
-  }, [clothesList, activeTab]);
+  const renderableList = useMemo(() => {
+    return clothesList.filter((item) => {
+      if (!item.imageUri) {
+        console.warn(`[home] skipping item ${item.id} — missing imageUri, cannot render on grid`);
+        return false;
+      }
+      return true;
+    });
+  }, [clothesList]);
 
-  const rows = useMemo(() => buildBentoRows(filteredList), [filteredList]);
+  const rows = useMemo(() => buildBentoRows(renderableList), [renderableList]);
 
   function handleAddPress() {
     if (clothesList.length >= maxStorage) {
@@ -93,7 +90,6 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.navBar}>
-        <Ionicons name="menu-outline" size={22} color={colors.charcoal} />
         <CupboardLogo size="sm" />
         <Pressable onPress={() => router.push("/checkout")} style={styles.creditPill}>
           <Text style={styles.creditPillText}>{aiCredits} Credits</Text>
@@ -110,16 +106,6 @@ export default function HomeScreen() {
           <View style={styles.listHeader}>
             <Text style={styles.title}>Main Archive</Text>
             <Text style={styles.subtitle}>Curated selections for the modern wardrobe.</Text>
-            <View style={styles.tabRow}>
-              {TABS.map((tab) => (
-                <Pressable key={tab.key} onPress={() => setActiveTab(tab.key)} style={styles.tab}>
-                  <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                    {tab.label.toUpperCase()}
-                  </Text>
-                  {activeTab === tab.key && <View style={styles.tabUnderline} />}
-                </Pressable>
-              ))}
-            </View>
           </View>
         }
         ListEmptyComponent={
@@ -200,27 +186,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.smoke,
     marginTop: 4,
-    marginBottom: spacing.md,
-  },
-  tabRow: {
-    flexDirection: "row",
-    gap: spacing.lg,
-    marginBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.hairline,
-  },
-  tab: { paddingBottom: 10 },
-  tabText: {
-    fontSize: 11,
-    letterSpacing: 1,
-    color: colors.smoke,
-    fontWeight: "600",
-  },
-  tabTextActive: { color: colors.charcoal },
-  tabUnderline: {
-    marginTop: 8,
-    height: 2,
-    backgroundColor: colors.charcoal,
+    marginBottom: spacing.lg,
   },
   grid: { paddingHorizontal: spacing.sm, paddingBottom: 120 },
   heroRow: { paddingHorizontal: 0 },

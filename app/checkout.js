@@ -21,21 +21,37 @@ const PLANS = {
 
 const METHOD_LABELS = { JAZZCASH: "JazzCash", EASYPAISA: "EasyPaisa", CARD: "Card" };
 
+function formatExpiry(raw) {
+  const digits = raw.replace(/[^0-9]/g, "").slice(0, 4);
+  if (digits.length < 3) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
 export default function CheckoutScreen() {
   const { applyMicroTopUp, applyInfiniteStyle } = useAppState();
   const [plan, setPlan] = useState(PLANS.TOPUP.key);
   const [method, setMethod] = useState(PAYMENT_METHODS[0]);
   const [accountNumber, setAccountNumber] = useState("");
+  const [cardholderName, setCardholderName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
 
   const selectedPlan = PLANS[plan];
+  const isCard = method === "CARD";
 
   async function handleCompletePayment() {
-    if (!accountNumber.trim()) {
-      setBanner({ tone: "error", message: `Enter a ${method === "CARD" ? "card" : "wallet"} number` });
+    if (isCard) {
+      if (!cardholderName.trim() || !accountNumber.trim() || expiryDate.length < 5 || cvv.trim().length < 3) {
+        setBanner({ tone: "error", message: "Fill in all card details" });
+        return;
+      }
+    } else if (!accountNumber.trim()) {
+      setBanner({ tone: "error", message: "Enter a wallet number" });
       return;
     }
+
     setBanner(null);
     setLoading(true);
 
@@ -105,16 +121,72 @@ export default function CheckoutScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>{method === "CARD" ? "Card Number" : "Wallet Number"}</Text>
-        <TextInput
-          style={styles.input}
-          value={accountNumber}
-          onChangeText={setAccountNumber}
-          placeholder={method === "CARD" ? "4242 4242 4242 4242" : "03xx xxxxxxx"}
-          placeholderTextColor={colors.smoke}
-          keyboardType="number-pad"
-        />
-        <Text style={styles.hint}>Sandbox tip: any number ending in 0000 simulates a failed payment.</Text>
+        {isCard ? (
+          <>
+            <Text style={styles.sectionLabel}>Cardholder Name</Text>
+            <TextInput
+              style={styles.input}
+              value={cardholderName}
+              onChangeText={setCardholderName}
+              placeholder="Ayesha Khan"
+              placeholderTextColor={colors.smoke}
+              autoCapitalize="words"
+            />
+
+            <Text style={styles.sectionLabel}>Card Number</Text>
+            <TextInput
+              style={styles.input}
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+              placeholder="4242 4242 4242 4242"
+              placeholderTextColor={colors.smoke}
+              keyboardType="number-pad"
+              maxLength={19}
+            />
+
+            <View style={styles.cardRow}>
+              <View style={styles.cardRowField}>
+                <Text style={styles.sectionLabel}>Expiry Date</Text>
+                <TextInput
+                  style={styles.input}
+                  value={expiryDate}
+                  onChangeText={(text) => setExpiryDate(formatExpiry(text))}
+                  placeholder="MM/YY"
+                  placeholderTextColor={colors.smoke}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                />
+              </View>
+              <View style={styles.cardRowField}>
+                <Text style={styles.sectionLabel}>CVV</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cvv}
+                  onChangeText={(text) => setCvv(text.replace(/[^0-9]/g, "").slice(0, 4))}
+                  placeholder="123"
+                  placeholderTextColor={colors.smoke}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={4}
+                />
+              </View>
+            </View>
+            <Text style={styles.hint}>Sandbox tip: a card number ending in 0000 simulates a failed payment.</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.sectionLabel}>Wallet Number</Text>
+            <TextInput
+              style={styles.input}
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+              placeholder="03xx xxxxxxx"
+              placeholderTextColor={colors.smoke}
+              keyboardType="number-pad"
+            />
+            <Text style={styles.hint}>Sandbox tip: a wallet number ending in 0000 simulates a failed payment.</Text>
+          </>
+        )}
 
         {banner && (
           <View
@@ -209,8 +281,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.charcoal,
     backgroundColor: colors.ivory,
+    marginBottom: spacing.md,
   },
-  hint: { fontSize: 11, color: colors.smoke, marginTop: 8 },
+  hint: { fontSize: 11, color: colors.smoke, marginTop: -4 },
+  cardRow: { flexDirection: "row", gap: 12 },
+  cardRowField: { flex: 1 },
   banner: {
     marginTop: spacing.lg,
     padding: spacing.md,

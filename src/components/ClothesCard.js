@@ -2,19 +2,18 @@ import { Pressable, View, Text, Image, StyleSheet } from "react-native";
 import { colors, radius, fonts, shadow } from "../theme/tokens";
 
 export default function ClothesCard({ item, onPress, span = "half" }) {
+  if (!item?.imageUri) {
+    console.error(`[ClothesCard] refusing to render item ${item?.id ?? "unknown"} — missing imageUri`);
+    return null;
+  }
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, shadow.card, pressed && styles.pressed]}
     >
       <View style={[styles.imageWrap, span === "full" && styles.imageWrapFull]}>
-        {item.imageUri ? (
-          <Image source={{ uri: item.imageUri }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderInitial}>{item.category?.[0]?.toUpperCase() ?? "C"}</Text>
-          </View>
-        )}
+        <Image source={{ uri: item.imageUri }} style={styles.image} resizeMode="cover" />
         <View style={styles.wearBadge}>
           <Text style={styles.wearBadgeText}>{item.wearCount}×</Text>
         </View>
@@ -49,17 +48,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1.4,
   },
   image: { width: "100%", height: "100%" },
-  placeholder: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.canvas,
-  },
-  placeholderInitial: {
-    fontFamily: fonts.serif,
-    fontSize: 32,
-    color: colors.smoke,
-  },
   wearBadge: {
     position: "absolute",
     top: 8,

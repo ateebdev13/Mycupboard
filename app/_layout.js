@@ -20,6 +20,7 @@ export default function RootLayout() {
           <Stack.Screen name="welcome" />
           <Stack.Screen name="home" />
           <Stack.Screen name="item/[id]" options={{ presentation: "modal" }} />
+          <Stack.Screen name="loading" options={{ presentation: "card", gestureEnabled: false }} />
           <Stack.Screen name="stylist-result" options={{ presentation: "card" }} />
           <Stack.Screen name="checkout" options={{ presentation: "modal" }} />
         </Stack>
