@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEFAULT_STYLE_PROFILE } from "../constants/styleProfiles";
 
 const STORAGE_KEY = "@merawardrobe/state";
 
@@ -65,6 +66,7 @@ export function AppProvider({ children }) {
             color: item.color || "Undyed",
             season: item.season || "All Season",
             composition: item.composition || "Composition not specified",
+            styleProfile: item.styleProfile || DEFAULT_STYLE_PROFILE,
             imageUri: item.imageUri || null,
             wearCount: 0,
             dateAdded: new Date().toISOString(),

@@ -3,16 +3,19 @@ import { Modal, View, Text, TextInput, StyleSheet, Pressable, Image } from "reac
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppState } from "../context/AppContext";
+import { STYLE_PROFILES, DEFAULT_STYLE_PROFILE } from "../constants/styleProfiles";
 import { colors, radius, fonts, spacing } from "../theme/tokens";
 
 export default function AddItemDrawer({ visible, onClose }) {
   const { addClothingItem } = useAppState();
   const [name, setName] = useState("");
   const [imageUri, setImageUri] = useState(null);
+  const [styleProfile, setStyleProfile] = useState(DEFAULT_STYLE_PROFILE);
 
   function reset() {
     setName("");
     setImageUri(null);
+    setStyleProfile(DEFAULT_STYLE_PROFILE);
   }
 
   function handleClose() {
@@ -49,7 +52,7 @@ export default function AddItemDrawer({ visible, onClose }) {
 
   function handleSave() {
     if (!name.trim() || !imageUri) return;
-    addClothingItem({ name: name.trim(), imageUri });
+    addClothingItem({ name: name.trim(), imageUri, styleProfile });
     reset();
     onClose();
   }
@@ -97,6 +100,21 @@ export default function AddItemDrawer({ visible, onClose }) {
           )}
 
           {!imageUri && <Text style={styles.hint}>A photo is required to add this piece.</Text>}
+
+          <Text style={styles.label}>Style Profile (optional)</Text>
+          <View style={styles.styleRow}>
+            {STYLE_PROFILES.map((profile) => (
+              <Pressable
+                key={profile.key}
+                onPress={() => setStyleProfile(profile.key)}
+                style={[styles.stylePill, styleProfile === profile.key && styles.stylePillActive]}
+              >
+                <Text style={[styles.stylePillText, styleProfile === profile.key && styles.stylePillTextActive]}>
+                  {profile.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           <Pressable
             onPress={handleSave}
@@ -207,6 +225,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.smoke,
     marginBottom: spacing.lg,
+  },
+  styleRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: spacing.lg,
+  },
+  stylePill: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+  },
+  stylePillActive: {
+    backgroundColor: colors.charcoal,
+    borderColor: colors.charcoal,
+  },
+  stylePillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.charcoalSoft,
+  },
+  stylePillTextActive: {
+    color: colors.ivory,
   },
   saveButton: {
     backgroundColor: colors.charcoal,

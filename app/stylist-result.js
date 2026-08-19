@@ -37,7 +37,7 @@ export default function StylistResultScreen() {
     const pending = takePendingOutfit();
     if (pending) {
       setOutfit(pending);
-      if (!pending.noMatch) {
+      if (pending.hasMatch) {
         ratingTimer.current = setTimeout(() => setRatingVisible(true), 2000);
       }
       return;
@@ -49,7 +49,7 @@ export default function StylistResultScreen() {
     deductCredit();
     generateOutfit(clothesList, occasion, anchorItemId || null).then((result) => {
       setOutfit(result);
-      if (!result.noMatch) {
+      if (result.hasMatch) {
         ratingTimer.current = setTimeout(() => setRatingVisible(true), 2000);
       }
     });
@@ -94,7 +94,7 @@ export default function StylistResultScreen() {
     );
   }
 
-  if (outfit.noMatch) {
+  if (!outfit.hasMatch) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <View style={styles.topBar}>
@@ -107,8 +107,8 @@ export default function StylistResultScreen() {
           <View style={styles.noMatchCircle}>
             <MaterialCommunityIcons name="hanger" size={34} color={colors.smoke} />
           </View>
-          <Text style={styles.loadingTitle}>No Match Found</Text>
-          <Text style={styles.noMatchBody}>{outfit.stylingTip}</Text>
+          <Text style={styles.loadingTitle}>{outfit.title}</Text>
+          <Text style={styles.noMatchBody}>{outfit.rationale}</Text>
 
           <Pressable onPress={handleAddNewItem} style={styles.primaryDark}>
             <Text style={styles.primaryDarkText}>+ Add New Item</Text>
@@ -125,7 +125,7 @@ export default function StylistResultScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.matchBadge}>
-          <Text style={styles.matchBadgeText}>✦ A Perfect Match ✦</Text>
+          <Text style={styles.matchBadgeText}>✦ {outfit.matchScore}% Match ✦</Text>
         </View>
         <Text style={styles.occasionLine}>Curated for {outfit.occasion}</Text>
 
@@ -138,7 +138,7 @@ export default function StylistResultScreen() {
 
         <View style={[styles.tipCard, shadow.card]}>
           <Text style={styles.tipLabel}>Styling Note</Text>
-          <Text style={styles.tipText}>{outfit.stylingTip}</Text>
+          <Text style={styles.tipText}>{outfit.rationale}</Text>
         </View>
 
         <Pressable onPress={handleMatchAnother} style={styles.primaryDark}>

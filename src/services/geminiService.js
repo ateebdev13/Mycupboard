@@ -2,19 +2,26 @@
 // configured (EXPO_PUBLIC_GEMINI_API_KEY), otherwise falls back to a local
 // editorial-style generator so the flow stays fully testable in Expo Go offline.
 //
-// Every result is an Anchor + Match pairing: one top and one bottom, resolved
-// back to the caller's own wardrobe items (with imageUri) by ID, never
-// invented. When an anchorItemId is supplied (styling around a specific
-// piece from its detail view), that item is always the anchor and only its
-// complementary piece is chosen. Without one, the anchor is chosen freely.
-// If the wardrobe can't supply a valid pairing, the service reports
-// noMatch: true instead of ever rendering half an outfit.
+// Pipeline for every call:
+//   1. Resolve the anchor item (fixed, from the item-detail flow, or chosen
+//      locally when none is given).
+//   2. Build a candidate pool LOCALLY, before any AI call: only items from
+//      the anchor's complementary category (Top<->Bottom) that are also
+//      style/gender-compatible (Menswear/Womenswear never cross-paired
+//      unless one side is Unisex). Gemini only ever sees this pool — it
+//      cannot select outside it.
+//   3. If the pool is empty, or the best available match — from Gemini or
+//      the local scorer — doesn't clear a 70% confidence threshold, the
+//      call resolves to hasMatch: false instead of ever rendering a weak
+//      or same-category pairing.
 
 import { occasionLabel, formalityWeight } from "../constants/occasions";
 import { categorizeItem } from "../utils/categorize";
+import { isStyleCompatible } from "../constants/styleProfiles";
 
 const GEMINI_MODEL = "gemini-flash-latest";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const MATCH_SCORE_THRESHOLD = 70;
 
 const NEUTRAL_COLORS = ["black", "white", "ivory", "beige", "tan", "grey", "gray", "navy", "brown", "charcoal", "cream", "stone", "khaki"];
 
@@ -31,7 +38,33 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-/** Scores how well `candidate` pairs with `anchor` for the occasion — color, season, formality. */
+/** A "bottom" pairs with a top match, everything else (top/onepiece/outerwear/footwear) pairs with a bottom match. */
+function complementBucketFor(anchorItem) {
+  return categorizeItem(anchorItem) === "bottom" ? "top" : "bottom";
+}
+
+/**
+ * Local candidate pool, computed BEFORE any AI call: only items from the
+ * anchor's complementary category, style/gender-compatible with the anchor,
+ * excluding the anchor itself.
+ */
+function buildCandidatePool(anchor, clothesList) {
+  const requiredBucket = complementBucketFor(anchor);
+  return clothesList.filter(
+    (item) => item.id !== anchor.id && categorizeItem(item) === requiredBucket && isStyleCompatible(anchor, item)
+  );
+}
+
+/** Picks a free-choice anchor when none was supplied: prefer a top, else a bottom. */
+function resolveWorkingAnchor(clothesList, fixedAnchor) {
+  if (fixedAnchor) return fixedAnchor;
+  const buckets = bucketWardrobe(clothesList);
+  if (buckets.top.length > 0) return pickRandom(buckets.top);
+  if (buckets.bottom.length > 0) return pickRandom(buckets.bottom);
+  return null;
+}
+
+/** Raw compatibility signal between anchor and candidate — color, season, formality. */
 function compatibilityScore(anchor, candidate, occasion) {
   const anchorColor = (anchor.color ?? "").trim().toLowerCase();
   const candidateColor = (candidate.color ?? "").trim().toLowerCase();
@@ -48,106 +81,76 @@ function compatibilityScore(anchor, candidate, occasion) {
   return score;
 }
 
-/** Picks the candidate that best pairs with `anchor` for the occasion, with light randomness among close ties. */
-function pickBestMatch(anchor, candidates, occasion) {
-  if (!candidates || candidates.length === 0) return null;
-  if (!anchor) return pickRandom(candidates);
-
-  const ranked = [...candidates].sort(
-    (a, b) => compatibilityScore(anchor, b, occasion) - compatibilityScore(anchor, a, occasion)
-  );
-  const topScore = compatibilityScore(anchor, ranked[0], occasion);
-  const contenders = ranked.filter((c) => compatibilityScore(anchor, c, occasion) === topScore);
-  return pickRandom(contenders);
+/** Normalizes the raw compatibility signal to a 0-100 confidence score for the >70% threshold. */
+function computeMatchScore(anchor, candidate, occasion) {
+  return Math.min(100, Math.round(55 + compatibilityScore(anchor, candidate, occasion) * 9));
 }
 
-/** A "bottom" anchors to a top match, everything else (top/onepiece/outerwear/footwear) anchors to a bottom match. */
-function complementBucketFor(anchorItem) {
-  return categorizeItem(anchorItem) === "bottom" ? "top" : "bottom";
-}
-
-/** Category guardrail: a match is only valid if it's a distinct item from the anchor's complementary bucket. */
-function isValidPairing(anchor, match) {
-  if (!anchor || !match) return false;
-  if (anchor.id === match.id) return false;
-  return categorizeItem(match) === complementBucketFor(anchor);
-}
-
-/**
- * Builds a mandatory anchor+match pairing from the wardrobe buckets.
- * If `fixedAnchor` is given, it is always the anchor. Otherwise a top is
- * preferred as the anchor, falling back to a bottom if no tops exist.
- * Either side of the returned pair may be null if the wardrobe can't supply it.
- */
-function pairAnchorAndMatch(buckets, occasion, fixedAnchor) {
-  if (fixedAnchor) {
-    const matchBucket = complementBucketFor(fixedAnchor);
-    return { anchor: fixedAnchor, match: pickBestMatch(fixedAnchor, buckets[matchBucket], occasion) };
-  }
-  if (buckets.top.length > 0) {
-    const anchor = pickRandom(buckets.top);
-    return { anchor, match: pickBestMatch(anchor, buckets.bottom, occasion) };
-  }
-  if (buckets.bottom.length > 0) {
-    const anchor = pickRandom(buckets.bottom);
-    return { anchor, match: pickBestMatch(anchor, buckets.top, occasion) };
-  }
-  return { anchor: null, match: null };
-}
-
-function buildNoMatch(occasion) {
+function buildNoMatch(occasion, anchor) {
+  const label = occasionLabel(occasion);
+  const itemName = anchor?.name ?? "this item";
   return {
-    title: "No Match Found",
-    occasion: occasionLabel(occasion),
-    anchor: null,
+    hasMatch: false,
+    title: "No Suitable Match Found",
+    occasion: label,
+    anchor: anchor ?? null,
     match: null,
-    stylingTip: "You don't have a matching top/bottom in your Cupboard for this occasion.",
-    noMatch: true,
+    matchScore: 0,
+    rationale: `You don't have a complementary item in your Cupboard that matches this ${itemName} for ${label}.`,
     source: "offline",
   };
 }
 
-function buildPrompt(clothesList, occasion, anchorItem) {
-  const wardrobeText = clothesList
-    .map((item) => `- id: ${item.id} | ${item.name} | category: ${item.category} | color: ${item.color} | season: ${item.season}`)
-    .join("\n");
-  const label = occasionLabel(occasion);
+/** Best candidate from the pool by local scoring, with light randomness among close ties. */
+function localBestMatch(anchor, candidatePool, occasion) {
+  const ranked = [...candidatePool].sort(
+    (a, b) => compatibilityScore(anchor, b, occasion) - compatibilityScore(anchor, a, occasion)
+  );
+  const topScore = compatibilityScore(anchor, ranked[0], occasion);
+  const contenders = ranked.filter((c) => compatibilityScore(anchor, c, occasion) === topScore);
+  const match = pickRandom(contenders);
+  const matchScore = computeMatchScore(anchor, match, occasion);
 
-  if (anchorItem) {
-    const anchorBucket = categorizeItem(anchorItem);
-    const requiredBucket = complementBucketFor(anchorItem);
-    return `You are a luxury fashion stylist for The Cupboard, a Pakistani wardrobe app.
-The user is dressing for: "${label}" and has already chosen this anchor piece: id ${anchorItem.id} (${anchorItem.name}, ${anchorItem.category}, ${anchorItem.color}).
-
-STEP 1 — Identify the anchor's category: this piece is a "${anchorBucket}".
-STEP 2 — Category rule (MANDATORY, do not break this): the anchor is a "${anchorBucket}", so you MUST return a "${requiredBucket}" as the match. If the anchor is a Top, the match MUST be a Bottom. If the anchor is a Bottom, the match MUST be a Top. NEVER return an item from the same category as the anchor (e.g. do not pair a Pant with another Pant).
-STEP 3 — From the wardrobe below, choose EXACTLY ONE "${requiredBucket}" item that pairs with the anchor for this occasion, matching in style, color, and formality. Do not select the anchor itself.
-
-Only choose from this exact wardrobe, referencing items by their id field:
-${wardrobeText}
-
-Respond in strict JSON, no markdown fences, with this exact shape:
-{
-  "title": "short editorial outfit name",
-  "matchId": "id (required, MUST be a ${requiredBucket} item, never the same category as the anchor)",
-  "stylingTip": "exactly 2 sentences of editorial styling advice explaining why the pairing works for the occasion"
-}`;
+  if (matchScore <= MATCH_SCORE_THRESHOLD) {
+    return buildNoMatch(occasion, anchor);
   }
 
+  const label = occasionLabel(occasion);
+  return {
+    hasMatch: true,
+    title: `The ${anchor.color} Edit`,
+    occasion: label,
+    anchor,
+    match,
+    matchScore,
+    rationale: `${anchor.name} and ${match.name} share a tonal, editorial balance built for ${label.toLowerCase()}. Let the pairing anchor the rest of your look with quiet confidence.`,
+    source: "offline",
+  };
+}
+
+function buildPrompt(anchor, candidatePool, occasion) {
+  const anchorBucket = categorizeItem(anchor);
+  const requiredBucket = complementBucketFor(anchor);
+  const label = occasionLabel(occasion);
+  const candidateText = candidatePool
+    .map(
+      (item) =>
+        `- id: ${item.id} | ${item.name} | category: ${item.category} | color: ${item.color} | season: ${item.season} | style: ${item.styleProfile ?? "UNISEX"}`
+    )
+    .join("\n");
+
   return `You are a luxury fashion stylist for The Cupboard, a Pakistani wardrobe app.
-The user is dressing for: "${label}".
+The user is dressing for: "${label}" and has already chosen this anchor piece: id ${anchor.id} (${anchor.name}, category: ${anchor.category} — a "${anchorBucket}", color: ${anchor.color}, style: ${anchor.styleProfile ?? "UNISEX"}).
 
-From the wardrobe below, choose EXACTLY ONE cohesive outfit: 1 Top AND 1 Bottom that match each other in style, color, and formality for the occasion. A complete pairing is MANDATORY — never respond with only one item, never substitute a one-piece dress/jumpsuit for a top+bottom pair, and NEVER return two items from the same category (e.g. two Tops or two Bottoms/Pants) — anchorId and matchId must be from different, complementary categories.
-
-Only choose from this exact wardrobe, referencing items by their id field:
-${wardrobeText}
+This candidate list has ALREADY been filtered to only "${requiredBucket}" items that are style/gender-compatible with the anchor — every item below is a valid category and style match. Choose the SINGLE best pairing from this list for the occasion, weighing color harmony, season, and formality:
+${candidateText}
 
 Respond in strict JSON, no markdown fences, with this exact shape:
 {
   "title": "short editorial outfit name",
-  "anchorId": "id (required, the top)",
-  "matchId": "id (required, the bottom — a different category from anchorId)",
-  "stylingTip": "exactly 2 sentences of editorial styling advice explaining why the top and bottom work together for the occasion"
+  "matchedItemId": "id from the candidate list above (required)",
+  "matchScore": 0-100 confidence score for how well this specific pairing suits the occasion,
+  "rationale": "exactly 2 sentences of editorial styling advice explaining why this pairing works for the anchor, the match, and the occasion"
 }`;
 }
 
@@ -159,92 +162,78 @@ function extractJson(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-function localFallbackOutfit(clothesList, occasion, fixedAnchor) {
-  const label = occasionLabel(occasion);
-  const buckets = bucketWardrobe(clothesList);
-  const { anchor, match } = pairAnchorAndMatch(buckets, occasion, fixedAnchor);
+/** Calls Gemini scoped to the pre-filtered candidate pool. Returns null (never throws for bad content) to signal the caller should fall back to local scoring. */
+async function requestGeminiMatch(anchor, candidatePool, occasion) {
+  const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
-  if (!anchor || !match) {
-    return buildNoMatch(occasion);
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: buildPrompt(anchor, candidatePool, occasion) }] }],
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Empty Gemini response");
+
+  const parsed = extractJson(text);
+  const byId = new Map(candidatePool.map((item) => [item.id, item]));
+  const match = parsed.matchedItemId ? byId.get(parsed.matchedItemId) : null;
+  const matchScore = Number(parsed.matchScore);
+
+  // Gemini can only legally choose from the candidate pool we sent it, but
+  // it's an LLM, not a database — hallucinated/missing ids or a non-numeric
+  // score are not trustworthy. Signal the caller to fall back locally.
+  if (!match || !Number.isFinite(matchScore)) return null;
+
+  if (matchScore <= MATCH_SCORE_THRESHOLD) {
+    return buildNoMatch(occasion, anchor);
   }
 
   return {
-    title: `The ${anchor.color} Edit`,
-    occasion: label,
+    hasMatch: true,
+    title: parsed.title || "Curated Look",
+    occasion: occasionLabel(occasion),
     anchor,
     match,
-    stylingTip: `${anchor.name} and ${match.name} share a tonal, editorial balance built for ${label.toLowerCase()}. Let the pairing anchor the rest of your look with quiet confidence.`,
-    source: "offline",
+    matchScore,
+    rationale: parsed.rationale || "A cohesive, editorial pairing curated for your day.",
+    source: "gemini",
   };
 }
 
 /**
- * @param {Array<{id: string, name: string, category: string, color: string, season: string, imageUri: string|null}>} clothesList
+ * @param {Array<{id: string, name: string, category: string, color: string, season: string, styleProfile?: string, imageUri: string|null}>} clothesList
  * @param {string} occasion - one of the OCCASIONS keys from src/constants/occasions.js
  * @param {string|null} [anchorItemId] - when set, this item is always the anchor and only its match is generated
- * @returns {Promise<{title: string, occasion: string, anchor: object|null, match: object|null, stylingTip: string, noMatch?: boolean, source?: string}>}
+ * @returns {Promise<{hasMatch: boolean, title: string, occasion: string, anchor: object|null, match: object|null, matchScore: number, rationale: string, source?: string}>}
  */
 export async function generateOutfit(clothesList, occasion, anchorItemId = null) {
   const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
   const fixedAnchor = anchorItemId ? clothesList.find((i) => i.id === anchorItemId) ?? null : null;
+  const anchor = resolveWorkingAnchor(clothesList, fixedAnchor);
 
-  if (!apiKey || clothesList.length === 0) {
-    return localFallbackOutfit(clothesList, occasion, fixedAnchor);
+  if (!anchor) {
+    return buildNoMatch(occasion, null);
   }
 
-  const buckets = bucketWardrobe(clothesList);
-  const label = occasionLabel(occasion);
-  const byId = new Map(clothesList.map((item) => [item.id, item]));
-
-  try {
-    const response = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: buildPrompt(clothesList, occasion, fixedAnchor) }] }],
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Empty Gemini response");
-
-    const parsed = extractJson(text);
-    let anchor = fixedAnchor ?? (parsed.anchorId ? byId.get(parsed.anchorId) ?? null : null);
-    let match = parsed.matchId ? byId.get(parsed.matchId) ?? null : null;
-
-    // Guarantee an anchor exists first (hallucinated/missing anchorId in free-pick mode).
-    if (!anchor) {
-      const repaired = pairAnchorAndMatch(buckets, occasion, null);
-      anchor = repaired.anchor;
-      match = repaired.match;
-    }
-
-    // Category guardrail: the AI is not trustworthy enough to enforce this on
-    // its own. If the match is missing, hallucinated, the anchor itself, or
-    // (the reported bug) the SAME category as the anchor — e.g. a Pant paired
-    // with another Pant — discard it and deterministically pick a correctly
-    // categorized complement (Top<->Bottom) from the anchor's opposite bucket.
-    if (anchor && !isValidPairing(anchor, match)) {
-      match = pickBestMatch(anchor, buckets[complementBucketFor(anchor)], occasion);
-    }
-
-    if (!anchor || !match) {
-      return buildNoMatch(occasion);
-    }
-
-    return {
-      title: parsed.title || "Curated Look",
-      occasion: label,
-      anchor,
-      match,
-      stylingTip: parsed.stylingTip || "A cohesive, editorial pairing curated for your day.",
-      source: "gemini",
-    };
-  } catch (err) {
-    console.warn("[geminiService] falling back to offline stylist:", err.message);
-    return localFallbackOutfit(clothesList, occasion, fixedAnchor);
+  const candidatePool = buildCandidatePool(anchor, clothesList);
+  if (candidatePool.length === 0) {
+    return buildNoMatch(occasion, anchor);
   }
+
+  if (apiKey) {
+    try {
+      const geminiResult = await requestGeminiMatch(anchor, candidatePool, occasion);
+      if (geminiResult) return geminiResult;
+    } catch (err) {
+      console.warn("[geminiService] Gemini call failed, falling back to local scoring:", err.message);
+    }
+  }
+
+  return localBestMatch(anchor, candidatePool, occasion);
 }
