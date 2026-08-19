@@ -16,21 +16,6 @@ const SOCIAL_PROOF = [
   "Fatima unlocked Infinite Style",
 ];
 
-function buildBentoRows(items) {
-  const rows = [];
-  let i = 0;
-  while (i < items.length) {
-    if (rows.length % 2 === 0) {
-      rows.push({ id: `row-${i}`, type: "hero", items: [items[i]] });
-      i += 1;
-    } else {
-      rows.push({ id: `row-${i}`, type: "pair", items: items.slice(i, i + 2) });
-      i += 2;
-    }
-  }
-  return rows;
-}
-
 function SocialProofTicker() {
   const [index, setIndex] = useState(0);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -77,8 +62,6 @@ export default function HomeScreen() {
     });
   }, [clothesList]);
 
-  const rows = useMemo(() => buildBentoRows(renderableList), [renderableList]);
-
   function handleAddPress() {
     if (clothesList.length >= maxStorage) {
       router.push("/checkout");
@@ -99,8 +82,9 @@ export default function HomeScreen() {
       <SocialProofTicker />
 
       <FlatList
-        data={rows}
-        keyExtractor={(row) => row.id}
+        data={renderableList}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
         contentContainerStyle={styles.grid}
         ListHeaderComponent={
           <View style={styles.listHeader}>
@@ -113,23 +97,9 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>Your archive is empty.{"\n"}Add your first piece to begin.</Text>
           </View>
         }
-        renderItem={({ item: row }) =>
-          row.type === "hero" ? (
-            <View style={styles.heroRow}>
-              <ClothesCard
-                item={row.items[0]}
-                span="full"
-                onPress={() => router.push(`/item/${row.items[0].id}`)}
-              />
-            </View>
-          ) : (
-            <View style={styles.pairRow}>
-              {row.items.map((item) => (
-                <ClothesCard key={item.id} item={item} onPress={() => router.push(`/item/${item.id}`)} />
-              ))}
-            </View>
-          )
-        }
+        renderItem={({ item }) => (
+          <ClothesCard item={item} onPress={() => router.push(`/item/${item.id}`)} />
+        )}
       />
 
       <Pressable onPress={handleAddPress} style={[styles.addButton, shadow.float]}>
@@ -189,8 +159,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   grid: { paddingHorizontal: spacing.sm, paddingBottom: 120 },
-  heroRow: { paddingHorizontal: 0 },
-  pairRow: { flexDirection: "row" },
   empty: {
     marginTop: spacing.xxl,
     alignItems: "center",

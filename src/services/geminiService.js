@@ -101,8 +101,7 @@ function buildNoMatch(occasion) {
     occasion: occasionLabel(occasion),
     anchor: null,
     match: null,
-    stylingTip:
-      "None of the items you have will match with your selected occasion. Let's expand your wardrobe or try a different approach.",
+    stylingTip: "You don't have a matching top/bottom in your Cupboard for this occasion.",
     noMatch: true,
     source: "offline",
   };

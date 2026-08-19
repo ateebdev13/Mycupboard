@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: spacing.xl,
   },
-  body: { padding: spacing.lg, alignItems: "center" },
+  body: { padding: spacing.lg, paddingBottom: 40, alignItems: "center" },
   matchBadge: {
     backgroundColor: colors.accentBg,
     borderRadius: radius.pill,

@@ -53,7 +53,8 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     width: "100%",
-    aspectRatio: 1.15,
+    height: 180,
+    maxHeight: 200,
     borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: colors.surfaceTan,
