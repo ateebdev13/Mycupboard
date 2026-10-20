@@ -56,16 +56,16 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
       style={{ transformOrigin: "50% 0%" }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
-      className="absolute left-1/2 top-full w-[min(1088px,calc(100vw-48px))] -translate-x-1/2 pt-2"
+      className="absolute left-1/2 top-full w-[min(1074px,calc(100vw-48px))] -translate-x-1/2 pt-2"
     >
-      <div className="overflow-hidden rounded-b-xl rounded-t-md border border-line bg-white shadow-[0_24px_60px_-24px_rgba(13,33,61,0.22),0_2px_6px_rgba(13,33,61,0.04)]">
-        <div className="grid grid-cols-3 divide-x divide-line">
+      <div className="overflow-hidden rounded-b-xl rounded-t-md border border-divider bg-white shadow-[0_24px_60px_-24px_rgba(13,33,61,0.22),0_2px_6px_rgba(13,33,61,0.04)]">
+        <div className="grid grid-cols-3 divide-x divide-divider">
           {serviceGroups.map((group) => (
             <motion.div key={group.label} variants={column}>
-              <p className="border-b border-line px-5 py-3 text-[11px] font-medium uppercase tracking-[0.06em] text-muted">
+              <p className="flex h-[41px] items-center border-b border-divider px-[22px] text-[12px] font-light uppercase leading-[17.6px] text-body">
                 {group.label}
               </p>
-              <ul className="py-1">
+              <ul className="pb-2.5 pt-[11px]">
                 {group.items.map((item) => {
                   const isActive = active === item.href;
                   return (
@@ -78,7 +78,7 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
                           if (!isActive) tick(e);
                           setActive(item.href);
                         }}
-                        className="group relative block px-5 py-3 outline-none"
+                        className="group relative block px-[22px] py-[9px] outline-none"
                       >
                         {isActive && (
                           <motion.span
@@ -87,10 +87,10 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
                             transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.7 }}
                           />
                         )}
-                        <span className="relative block text-[15px] font-semibold leading-snug text-ink transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
+                        <span className="relative block text-[15px] font-medium leading-[17.6px] text-ink transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
                           {item.title}
                         </span>
-                        <span className="relative mt-0.5 block text-[12.5px] leading-snug text-muted transition-colors duration-300 group-hover:text-body">
+                        <span className="relative mt-px block text-[12px] font-light leading-[17.6px] text-body">
                           {item.description}
                         </span>
                       </a>
@@ -103,7 +103,7 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
         </div>
         <motion.p
           variants={column}
-          className="border-t border-line px-5 py-3.5 text-center text-[13px] text-body"
+          className="border-t border-divider px-[22px] py-2 text-center text-[14px] font-light leading-[32px] text-body"
         >
           {servicesTagline}
         </motion.p>
