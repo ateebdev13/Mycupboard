@@ -67,7 +67,7 @@ export function Navbar() {
     >
       <nav
         aria-label="Main"
-        className="relative mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 md:px-8 xl:px-14"
+        className="relative mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 md:px-8 xl:px-[50px]"
       >
         <a
           href="/"
@@ -78,7 +78,7 @@ export function Navbar() {
         </a>
 
         <ul
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 lg:flex"
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center lg:flex"
           ref={listRef}
           onPointerLeave={() => setHovered(null)}
         >
@@ -101,14 +101,14 @@ export function Navbar() {
                 setHovered("services");
                 tick(e);
               }}
-              className="relative flex items-center gap-1.5 rounded-md px-3 py-2 text-[15px] text-ink"
+              className="relative flex items-center gap-1.5 rounded-md px-[15px] py-2.5 text-[16px] leading-[17.6px] text-body transition-colors duration-200 hover:text-ink aria-expanded:text-ink"
             >
               <motion.span
                 className="relative inline-flex"
                 animate={{ rotate: servicesOpen ? 45 : 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
               >
-                <PlusIcon className="size-3" />
+                <PlusIcon className="size-[11px]" />
               </motion.span>
               <span className="relative">Services</span>
             </button>
@@ -121,7 +121,7 @@ export function Navbar() {
                   setHovered(link.href);
                   tick(e);
                 }}
-                className="relative block rounded-md px-3 py-2 text-[15px] text-ink"
+                className="relative block rounded-md px-[15px] py-2.5 text-[16px] leading-[17.6px] text-body transition-colors duration-200 hover:text-ink"
               >
                 <span className="relative">{link.label}</span>
               </a>
@@ -134,9 +134,9 @@ export function Navbar() {
           <a
             href="#book"
             onPointerEnter={ctaSound}
-            className="group hidden items-center gap-2.5 rounded-lg bg-cta px-5 py-3 text-[15px] font-medium text-ink shadow-[0_1px_0_rgba(13,33,61,0.06)] transition-[transform,box-shadow,background-color] duration-300 ease-out-expo hover:-translate-y-px hover:bg-cta-hover hover:shadow-[0_10px_24px_-10px_rgba(255,150,30,0.7)] active:translate-y-0 active:scale-[0.98] sm:inline-flex"
+            className="group hidden items-center gap-2.5 rounded-[4px] bg-cta px-6 py-3.5 text-[16px] font-medium leading-[22px] text-ink shadow-[0_1px_0_rgba(13,33,61,0.06)] transition-[transform,box-shadow,background-color] duration-300 ease-out-expo hover:-translate-y-px hover:bg-cta-hover hover:shadow-[0_10px_24px_-10px_rgba(255,150,30,0.7)] active:translate-y-0 active:scale-[0.98] sm:inline-flex"
           >
-            <CalendarIcon className="size-4 transition-transform duration-300 ease-out-expo group-hover:-rotate-6 group-hover:scale-110" />
+            <CalendarIcon className="size-[21px] transition-transform duration-300 ease-out-expo group-hover:-rotate-6 group-hover:scale-110" />
             Book a Strategy Call
           </a>
           <MobileMenu open={mobileOpen} onOpenChange={setMobileOpen} />

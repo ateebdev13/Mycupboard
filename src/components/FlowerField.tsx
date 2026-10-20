@@ -36,12 +36,17 @@ uniform vec2 u_scale;   // cover-fit: uv -> texture space
 uniform vec2 u_offset;
 uniform vec2 u_pointer; // -1..1, smoothed
 
-void main() {
-  // v_uv.y: 0 at the bottom of the canvas, 1 at the top.
-  float h = v_uv.y;
-  float bend = pow(h, 1.6);
+// Image-space height of the tallest flower heads (0 = bottom edge).
+const float TOPS = 0.43;
 
+void main() {
   vec2 uv = v_uv * u_scale + u_offset;
+
+  // Bend grows from the roots to the flower heads, then fades out above them
+  // so the sky (and the headline sitting on it) stays perfectly still.
+  float h = uv.y;
+  float bend = pow(clamp(h / TOPS, 0.0, 1.0), 1.6) * (1.0 - smoothstep(TOPS, TOPS + 0.12, h));
+
   float x = uv.x;
   float t = u_time;
 
@@ -49,11 +54,11 @@ void main() {
   float sway  = sin(t * 0.85 + x * 6.3)
               + 0.45 * sin(t * 1.55 + x * 12.7 + 1.3)
               + 0.20 * sin(t * 2.70 + x * 23.0 + 4.1);
-  float dx = sway * (0.0028 + 0.0024 * gust) * bend;
-  float dy = sin(t * 1.10 + x * 9.0 + 0.7) * 0.0016 * bend;
+  float dx = sway * (0.0022 + 0.0018 * gust) * bend;
+  float dy = sin(t * 1.10 + x * 9.0 + 0.7) * 0.0012 * bend;
 
-  dx += u_pointer.x * 0.006 * bend;
-  dy += u_pointer.y * 0.003 * bend;
+  dx += u_pointer.x * 0.0045 * bend;
+  dy += u_pointer.y * 0.002 * bend;
 
   vec2 p = uv - vec2(dx, dy);
   p.y = 1.0 - p.y;

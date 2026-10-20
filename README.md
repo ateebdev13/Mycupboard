@@ -19,9 +19,14 @@ npm run build
 - `src/components/LogoMarquee.tsx` – seamless client logo loop
 - `src/lib/sound.ts` – opt-in hover sounds (off by default, toggle in navbar)
 
-## Placeholders to replace from Figma
+## Assets
 
-- `public/hero/flowers-placeholder.jpg` – cropped from a screenshot; replace with the full-resolution export (update `width`/`height` in `Hero.tsx`)
-- `public/logos/*.png` – cropped from a screenshot; replace with SVG exports
-- Wordmark is live text; replace with the SVG logo
-- Font is Plus Jakarta Sans as a stand-in; type sizes, spacing, radii and shadows are estimates
+- `public/hero/flowers.webp` – hero photo from Figma (2000 × 963), animated by `FlowerField`
+- `public/logos/*.svg` – client logos exported from Figma
+- `src/app/fonts/` – Google Sans Flex (OFL), latin subset with weight + slant axes
+
+Still placeholders (cropped from a screenshot):
+
+- `public/logos/*.png` – replace with the SVG exports
+- MetaLogics wordmark is live text – replace with the SVG logo
+- Badge flag icon is hand-drawn – replace with the Figma export

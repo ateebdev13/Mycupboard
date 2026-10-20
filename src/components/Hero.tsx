@@ -8,14 +8,14 @@ import { ArrowUpRight, FlagIcon } from "./icons";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-// Each fragment is animated as its own word; style comes from the design.
+// Each word animates on its own; weights/slant come from the Figma text styles.
 const headline: { text: string; className: string }[] = [
-  { text: "Building", className: "font-bold" },
-  { text: "AI", className: "font-normal italic" },
-  { text: "Products", className: "font-normal italic" },
-  { text: "that", className: "font-bold" },
-  { text: "Reduce", className: "font-normal" },
-  { text: "Costs", className: "font-normal" },
+  { text: "Building", className: "font-semibold" },
+  { text: "AI", className: "font-light slant" },
+  { text: "Products", className: "font-light slant" },
+  { text: "that", className: "font-semibold" },
+  { text: "Reduce", className: "font-light" },
+  { text: "Costs", className: "font-light" },
 ];
 
 const words: Variants = {
@@ -40,36 +40,47 @@ const fadeUp = (delay: number): Variants => ({
   show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: EASE, delay } },
 });
 
+// Figma frame: 1440 × 693 photo directly under the 76px navbar.
+const PHOTO = { src: "/hero/flowers.webp", width: 2000, height: 963 };
+
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  // Light depth on scroll: copy drifts up a touch faster than the flowers.
+  // Light depth on scroll: the copy drifts up a touch faster than the photo.
   const copyY = useTransform(scrollYProgress, [0, 1], [0, -60]);
-  const flowersY = useTransform(scrollYProgress, [0, 1], [0, 40]);
   const ctaSound = useHoverSound("cta");
 
   return (
     <section
       ref={ref}
-      className="relative isolate overflow-hidden bg-gradient-to-b from-hero to-hero-deep"
+      className="relative isolate h-[max(48.125vw,680px)] max-h-[1000px] overflow-hidden bg-hero"
     >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2, ease: EASE, delay: 0.2 }}
+        className="absolute inset-0 -z-10"
+      >
+        <FlowerField {...PHOTO} className="size-full" />
+      </motion.div>
+
       <motion.div
         style={{ y: copyY }}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex max-w-[1440px] flex-col items-center px-5 pt-16 text-center md:pt-24"
+        className="mx-auto flex max-w-[1440px] flex-col items-center px-5 pt-14 text-center md:pt-[93px]"
       >
         <motion.p
           variants={fadeUp(0)}
-          className="inline-flex items-center gap-2 rounded-[4px] bg-white px-2.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.04em] text-ink shadow-[0_1px_2px_rgba(13,33,61,0.05)]"
+          className="inline-flex items-center gap-2.5 rounded-[7px] bg-white px-[18px] py-[7px] text-[12px] font-light uppercase leading-[18px] text-body md:text-[14px]"
         >
-          <FlagIcon className="size-3" />
+          <FlagIcon className="size-[18px] text-black" />
           One Team. Idea to Production.
         </motion.p>
 
         <motion.h1
           variants={words}
-          className="mt-6 max-w-[16ch] text-balance text-[38px] leading-[1.1] tracking-[-0.025em] text-ink sm:max-w-none sm:text-[46px] lg:text-[52px]"
+          className="mt-8 max-w-[14ch] text-balance text-[36px] leading-[1.25] text-ink sm:max-w-none sm:text-[44px] lg:mt-[35px] lg:text-[52px] lg:leading-[67px]"
         >
           {headline.map((w, i) => (
             <Fragment key={i}>
@@ -85,49 +96,35 @@ export function Hero() {
 
         <motion.p
           variants={fadeUp(0.45)}
-          className="mt-5 max-w-[34ch] text-[16px] leading-relaxed text-ink-soft sm:max-w-none md:text-[18px]"
+          className="mt-3 max-w-[34ch] text-[17px] leading-[28px] text-body sm:max-w-none md:mt-4 md:text-[20px] md:leading-[32px]"
         >
           One team for your entire product from first strategy call to the final launch
         </motion.p>
 
-        <motion.div variants={fadeUp(0.55)} className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <motion.div
+          variants={fadeUp(0.55)}
+          className="mt-8 flex flex-wrap items-center justify-center gap-[13px] md:mt-[51px]"
+        >
           <a
             href="#contact"
             onPointerEnter={ctaSound}
-            className="rounded-md bg-ink px-5 py-3 text-[15px] font-medium text-white transition-[transform,box-shadow,background-color] duration-300 ease-out-expo hover:-translate-y-px hover:bg-[#16304f] hover:shadow-[0_12px_24px_-12px_rgba(13,33,61,0.6)] active:translate-y-0 active:scale-[0.98]"
+            className="rounded-[6px] bg-ink px-5 py-3.5 md:px-6 text-[16px] font-medium leading-[22px] text-white transition-[transform,box-shadow,background-color] duration-300 ease-out-expo hover:-translate-y-px hover:bg-[#16304f] hover:shadow-[0_12px_24px_-12px_rgba(13,33,61,0.6)] active:translate-y-0 active:scale-[0.98]"
           >
-            Get In Touch
+            Get in Touch
           </a>
           <a
             href="#case-studies"
             onPointerEnter={ctaSound}
-            className="group inline-flex items-center gap-2 rounded-md border border-line bg-white px-5 py-3 text-[15px] font-medium text-ink transition-[transform,box-shadow,border-color] duration-300 ease-out-expo hover:-translate-y-px hover:border-[#d5d9e0] hover:shadow-[0_12px_24px_-14px_rgba(13,33,61,0.3)] active:translate-y-0 active:scale-[0.98]"
+            className="group inline-flex items-center gap-2.5 rounded-[6px] bg-white px-5 py-3.5 md:px-6 text-[16px] font-medium leading-[22px] text-ink outline outline-1 -outline-offset-1 outline-line transition-[transform,box-shadow,outline-color] duration-300 ease-out-expo hover:-translate-y-px hover:outline-[#c9d0da] hover:shadow-[0_12px_24px_-14px_rgba(13,33,61,0.3)] active:translate-y-0 active:scale-[0.98]"
           >
             Explore Our Work
             {/* Arrow exits top-right while a copy slides in from bottom-left. */}
-            <span className="relative size-4 overflow-hidden">
-              <ArrowUpRight className="absolute inset-0 size-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-4 group-hover:-translate-y-4" />
-              <ArrowUpRight className="absolute inset-0 size-4 -translate-x-4 translate-y-4 transition-transform duration-300 ease-out-expo group-hover:translate-x-0 group-hover:translate-y-0" />
+            <span className="relative size-2.5 overflow-hidden">
+              <ArrowUpRight className="absolute inset-0 size-2.5 transition-transform duration-300 ease-out-expo group-hover:translate-x-3 group-hover:-translate-y-3" />
+              <ArrowUpRight className="absolute inset-0 size-2.5 -translate-x-3 translate-y-3 transition-transform duration-300 ease-out-expo group-hover:translate-x-0 group-hover:translate-y-0" />
             </span>
           </a>
         </motion.div>
-      </motion.div>
-
-      <motion.div
-        style={{ y: flowersY, transformOrigin: "50% 100%" }}
-        initial={{ opacity: 0, scaleY: 0.94 }}
-        animate={{ opacity: 1, scaleY: 1 }}
-        transition={{ duration: 1.4, ease: EASE, delay: 0.25 }}
-        className="relative -mt-4 md:-mt-6"
-      >
-        {/* Placeholder art cropped from the approved screenshot; swap for the
-            full-resolution Figma export without code changes (same aspect). */}
-        <FlowerField
-          src="/hero/flowers-placeholder.jpg"
-          width={1454}
-          height={314}
-          className="h-[clamp(200px,21.6vw,420px)] w-full [mask-image:linear-gradient(to_bottom,transparent,#000_22%)]"
-        />
       </motion.div>
     </section>
   );

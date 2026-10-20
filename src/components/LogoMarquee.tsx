@@ -2,12 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-// Placeholder rasters cropped from the approved screenshot; replace with the
-// SVG exports from Figma (keep the names, update width/height).
-const logos = [
+// SVGs are Figma exports (193 × 86 tiles). PNGs are placeholders cropped from
+// a screenshot until their SVG exports arrive; they're centred in the same tile.
+const logos: { name: string; src: string; w?: number; h?: number }[] = [
+  { name: "Edusource", src: "/logos/edusource.svg" },
   { name: "Little Vista", src: "/logos/little-vista.png", w: 201, h: 51 },
+  { name: "ANC", src: "/logos/anc.svg" },
   { name: "Mesakem", src: "/logos/mesakem.png", w: 249, h: 33 },
   { name: "Self Made Couture", src: "/logos/self-made.png", w: 207, h: 75 },
+  { name: "Allied X", src: "/logos/allied-x.svg" },
   { name: "MyTick", src: "/logos/mytick.png", w: 171, h: 51 },
   { name: "Popcurb", src: "/logos/popcurb.png", w: 204, h: 51 },
   { name: "KVO", src: "/logos/kvo.png", w: 135, h: 45 },
@@ -15,7 +18,7 @@ const logos = [
 ];
 
 const SPEED = 42; // px per second
-const SCALE = 0.6; // raster px -> CSS px
+const SCALE = 0.6; // placeholder raster px -> CSS px
 
 export function LogoMarquee() {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -59,15 +62,15 @@ export function LogoMarquee() {
   };
 
   return (
-    <section aria-labelledby="clients-heading" className="bg-white py-14 md:py-16">
+    <section aria-labelledby="clients-heading" className="bg-white pb-14 pt-16 md:pb-20 md:pt-[109px]">
       <h2
         id="clients-heading"
-        className="px-5 text-center text-[11px] font-medium uppercase tracking-[0.06em] text-muted md:text-[12px]"
+        className="px-5 text-center text-[12px] font-light uppercase leading-[18px] text-body md:text-[14px]"
       >
         Trusted by 100+ high growth startups and enterprise platforms
       </h2>
       <div
-        className="marquee-mask mt-8 overflow-hidden motion-reduce:overflow-x-auto md:mt-10"
+        className="marquee-mask mt-8 overflow-hidden motion-reduce:overflow-x-auto md:mt-11"
         onPointerEnter={(e) => e.pointerType === "mouse" && setRate(0.25)}
         onPointerLeave={(e) => e.pointerType === "mouse" && setRate(1)}
       >
@@ -76,20 +79,24 @@ export function LogoMarquee() {
             <ul
               key={copy}
               aria-hidden={copy === 1 || undefined}
-              className="flex shrink-0 items-center gap-14 pr-14 md:gap-20 md:pr-20"
+              className="flex shrink-0 items-center gap-4 pr-4 md:gap-7 md:pr-7"
             >
               {logos.map((logo) => (
-                <li key={logo.name} className="shrink-0">
+                <li
+                  key={logo.name}
+                  className="flex h-[70px] w-[156px] shrink-0 items-center justify-center md:h-[86px] md:w-[193px]"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={logo.src}
                     alt={copy === 0 ? logo.name : ""}
-                    width={Math.round(logo.w * SCALE)}
-                    height={Math.round(logo.h * SCALE)}
+                    width={logo.w ? Math.round(logo.w * SCALE) : 193}
+                    height={logo.h ? Math.round(logo.h * SCALE) : 86}
                     loading="lazy"
                     draggable={false}
-                    className="h-auto select-none opacity-80 transition-opacity duration-300 hover:opacity-100"
-                    style={{ width: Math.round(logo.w * SCALE) }}
+                    className={`select-none opacity-85 transition-opacity duration-300 hover:opacity-100 ${
+                      logo.w ? "h-auto max-w-[80%]" : "size-full"
+                    }`}
                   />
                 </li>
               ))}

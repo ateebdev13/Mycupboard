@@ -60,7 +60,7 @@ export function MobileMenu({ open, onOpenChange }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.2, delay: 0.05 } }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 bottom-0 top-[72px] overflow-y-auto bg-white lg:hidden"
+            className="fixed inset-x-0 bottom-0 top-[76px] overflow-y-auto bg-white lg:hidden"
           >
             <motion.ul
               className="flex flex-col px-5 pb-32 pt-2 md:px-8"
@@ -145,9 +145,9 @@ export function MobileMenu({ open, onOpenChange }: Props) {
               <a
                 href="#book"
                 onClick={close}
-                className="flex w-full items-center justify-center gap-2.5 rounded-lg bg-cta px-5 py-3.5 text-[15px] font-medium text-ink active:scale-[0.98]"
+                className="flex w-full items-center justify-center gap-2.5 rounded-[4px] bg-cta px-6 py-3.5 text-[16px] font-medium text-ink active:scale-[0.98]"
               >
-                <CalendarIcon className="size-4" />
+                <CalendarIcon className="size-[21px]" />
                 Book a Strategy Call
               </a>
             </motion.div>

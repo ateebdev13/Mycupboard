@@ -90,7 +90,7 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
                         <span className="relative block text-[15px] font-semibold leading-snug text-ink transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5">
                           {item.title}
                         </span>
-                        <span className="relative mt-0.5 block text-[12.5px] leading-snug text-muted transition-colors duration-300 group-hover:text-ink-soft">
+                        <span className="relative mt-0.5 block text-[12.5px] leading-snug text-muted transition-colors duration-300 group-hover:text-body">
                           {item.description}
                         </span>
                       </a>
@@ -103,7 +103,7 @@ export function ServicesMenu({ id, onPointerEnter, onPointerLeave, onNavigate }:
         </div>
         <motion.p
           variants={column}
-          className="border-t border-line px-5 py-3.5 text-center text-[13px] text-ink-soft"
+          className="border-t border-line px-5 py-3.5 text-center text-[13px] text-body"
         >
           {servicesTagline}
         </motion.p>
