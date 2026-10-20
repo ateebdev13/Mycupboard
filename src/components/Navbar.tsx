@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { navLinks } from "@/lib/nav";
 import { useHoverSound, playSound } from "@/lib/sound";
-import { CalendarIcon, PlusIcon } from "./icons";
+import { CalendarIcon, PlusIcon, Wordmark } from "./icons";
 import { ServicesMenu } from "./ServicesMenu";
 import { MobileMenu } from "./MobileMenu";
 import { SoundToggle } from "./SoundToggle";
@@ -69,12 +69,8 @@ export function Navbar() {
         aria-label="Main"
         className="relative mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 md:px-8 xl:px-[50px]"
       >
-        <a
-          href="/"
-          className="text-[22px] font-semibold tracking-[-0.02em] text-ink md:text-[24px]"
-          aria-label="MetaLogics home"
-        >
-          MetaLogics
+        <a href="/" aria-label="MetaLogics home" className="text-ink">
+          <Wordmark aria-hidden className="h-6 w-auto md:h-7" />
         </a>
 
         <ul

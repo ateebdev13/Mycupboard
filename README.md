@@ -28,5 +28,3 @@ npm run build
 Still placeholders (cropped from a screenshot):
 
 - `public/logos/*.png` – replace with the SVG exports
-- MetaLogics wordmark is live text – replace with the SVG logo
-- Badge flag icon is hand-drawn – replace with the Figma export

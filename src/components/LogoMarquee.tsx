@@ -8,7 +8,7 @@ const logos: { name: string; src: string; w?: number; h?: number }[] = [
   { name: "Edusource", src: "/logos/edusource.svg" },
   { name: "Little Vista", src: "/logos/little-vista.png", w: 201, h: 51 },
   { name: "ANC", src: "/logos/anc.svg" },
-  { name: "Mesakem", src: "/logos/mesakem.png", w: 249, h: 33 },
+  { name: "Mesakem", src: "/logos/mesakem.svg" },
   { name: "Self Made Couture", src: "/logos/self-made.png", w: 207, h: 75 },
   { name: "Allied X", src: "/logos/allied-x.svg" },
   { name: "MyTick", src: "/logos/mytick.png", w: 171, h: 51 },
