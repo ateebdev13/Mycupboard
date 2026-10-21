@@ -1,0 +1,22 @@
+{
+  "name": "agency-reel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fast-cut agency showreel of four product designs, built with Remotion",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render AgencyReel out/agency-reel.mp4 --codec=h264 --crf=16",
+    "music": "python3 scripts/make_music.py public/audio/reel-beat.wav"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "@remotion/transitions": "4.0.537",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.0",
+    "typescript": "5.8.3"
+  }
+}
