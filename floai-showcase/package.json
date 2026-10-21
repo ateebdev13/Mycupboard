@@ -1,0 +1,24 @@
+{
+  "name": "floai-showcase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FloAI analytics dashboard — 15s cinematic product showcase built with Remotion",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render FloAIShowcase out/floai-showcase.mp4 --codec=h264 --crf=16",
+    "still": "remotion still FloAIShowcase out/still.png",
+    "music": "bash scripts/make-music.sh"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "@remotion/google-fonts": "4.0.537",
+    "@remotion/paths": "4.0.537",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.0",
+    "typescript": "5.8.3"
+  }
+}
